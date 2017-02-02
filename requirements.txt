@@ -1,0 +1,4 @@
+configargparse>=0.11.0
+#pypdftk>=0.3
+#fdfgen>=0.15.0
+
