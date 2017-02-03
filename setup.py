@@ -26,7 +26,8 @@ setup(name='blockchain-certificates',
       zip_safe=False,
       entry_points={
           'console_scripts': [
-              'create-certificates = blockchain_certificates.create_certificates:main'
+              'create-certificates = blockchain_certificates.create_certificates:main',
+              'publish-hash = blockchain_certificates.publish_hash:main'
           ]
       }
      )

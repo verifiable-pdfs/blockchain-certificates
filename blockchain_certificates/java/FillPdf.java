@@ -25,19 +25,18 @@ public class FillPdf {
 	String pdfTemplateFile = args[0];
 	String outputFile = args[1];
 	String fieldsAsJsonString = args[2];
-	boolean isXfaForm = false;
-	if(args.length > 3) 
-	    isXfaForm = "xfa".equals(args[3]);
+
+	//boolean isXfaForm = false;
+	//if(args.length > 3) 
+	//    isXfaForm = "xfa".equals(args[3]);
+
 	//System.out.println(fieldsAsJsonString);
 
 	JSONParser parser = new JSONParser();
 	Object obj = parser.parse(fieldsAsJsonString);
 	JSONObject fieldsArray = (JSONObject) obj;
 
-	if(!isXfaForm) 
-	    fillInCertificates(pdfTemplateFile, outputFile, fieldsArray);
-	else
-	    fillInIndexXFA(pdfTemplateFile, outputFile, fieldsArray);
+	fillInCertificates(pdfTemplateFile, outputFile, fieldsArray);
     }
 
 
@@ -57,36 +56,6 @@ public class FillPdf {
         stamper.close();
     }
     
-    public static void fillInIndexXFA(String src, String dest, JSONObject fieldsArray) throws Exception, IOException, ParseException {
-        PdfReader reader = new PdfReader(src);
-        PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(dest));
-        AcroFields fields = stamper.getAcroFields();
-	
-	StringBuffer buf = new StringBuffer();
-	buf.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
-	buf.append("<form1><page1>");
-
-	for(Iterator iterator = fieldsArray.keySet().iterator(); iterator.hasNext();) {
-	    String key = (String) iterator.next();
-	    String value = (String) fieldsArray.get(key);
-	    buf.append("<" + key + ">");
-	    buf.append(value);
-	    buf.append("</" + key + ">\n");
-	}
-	buf.append("</page1></form1>");
-
-	String xmlStr = buf.toString();
-System.out.println(xmlStr);
-	XfaForm xfa = fields.getXfa();
-	xfa.fillXfaForm(new ByteArrayInputStream(xmlStr.getBytes()));
-
-	fields.removeXfa();
-
-        stamper.setFormFlattening(true);
-        stamper.close();
-	reader.close();
-    }
-
 
 }
 

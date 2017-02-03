@@ -1,4 +1,4 @@
 configargparse>=0.11.0
-#pypdftk>=0.3
-#fdfgen>=0.15.0
+fpdf>=1.7.2
+python-bitcoinlib>=0.7.0
 

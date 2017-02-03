@@ -21,8 +21,7 @@ from bitcoin.wallet import *
 Issues a hash to the Bitcoin's blockchain using OP_RETURN
 '''
 def issue_hash(conf):
-    pdf_index_template_file = os.path.join(conf.working_directory, conf.pdf_index_template_file)
-    pdf_index_file = os.path.splitext(pdf_index_template_file)[0] + "_final.pdf"
+    pdf_index_file = os.path.join(conf.working_directory, conf.output_pdf_index_file)
     print('\nConfigured values are:\n')
     print('working_directory:\t{}'.format(conf.working_directory))
     print('pdf_index_file:\t\t{}'.format(pdf_index_file))
@@ -115,7 +114,7 @@ def load_config():
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-d', '--working_directory', type=str, default='.', help='the main working directory - all paths/files are relative to this')
-    p.add_argument('-i', '--pdf_index_template_file', type=str, default='index_template.pdf', help='the pdf index form to populate -- used to get the final pdf index file')
+    p.add_argument('-o', '--output_pdf_index_file', type=str, default='index_document.pdf', help='the name of the pdf index document which hash will be stored in the blockchain')
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
