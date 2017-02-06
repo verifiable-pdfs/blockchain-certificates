@@ -91,6 +91,7 @@ def create_certificates_index(conf, cert_hashes):
     print('Institution name:\n{}\n'.format(conf.institution_name))
     print('Index document title:\n{}\n'.format(conf.index_title))
     print('Index issuing text:\n{}\n'.format(conf.index_issuing_text))
+    print('Index validation text:\n{}\n'.format(conf.index_validation_text))
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
         sys.exit()
@@ -100,16 +101,27 @@ def create_certificates_index(conf, cert_hashes):
     pdf = FPDF('L', 'mm', 'A4')
     effective_page_width = pdf.w - 2*pdf.l_margin
     pdf.add_page()
+
     pdf.set_font('Arial', 'B', 32)
     pdf.cell(effective_page_width, 30, conf.institution_name, 0, 2, 'C')
-    pdf.set_font('Arial', 'B', 24)
-    pdf.multi_cell(effective_page_width, 10, conf.index_title)
+
+    pdf.set_font('Arial', 'B', 18)
+    pdf.multi_cell(effective_page_width, 7, conf.index_title)
     pdf.ln()
-    pdf.set_font('Times', '', 22)
-    pdf.multi_cell(effective_page_width, 8, conf.index_issuing_text)
+
+    pdf.set_font('Times', '', 18)
+    pdf.multi_cell(effective_page_width, 7, conf.index_issuing_text)
     pdf.ln()
-    pdf.set_font('Times', 'B', 20)
+
+    for t in conf.index_validation_text:
+        pdf.set_font('Times', '', 16)
+        pdf.multi_cell(effective_page_width, 6, t)
+    pdf.ln()
+
+    pdf.add_page()
+    pdf.set_font('Times', 'B', 18)
     pdf.cell(effective_page_width, 15, "The certificates' hashes follow:", 0, 2, 'C')
+
     pdf.set_font('Times', '', 18)
     for h in cert_hashes:
         pdf.cell(effective_page_width, 6, h, 0, 0, 'C')
@@ -154,6 +166,7 @@ def load_config():
     p.add_argument('-i', '--institution_name', type=str, help='the name of the institution to display in the the index document')
     p.add_argument('-t', '--index_title', type=str, help='the title of the index document')
     p.add_argument('-s', '--index_issuing_text', type=str, help='the text describing date and address of transaction')
+    p.add_argument('-x', '--index_validation_text', type=str, action='append', help='the text describing the process of validating the certificate')
     p.add_argument('-v', '--graduates_csv_file', type=str, default='graduates.csv', help='the csv file with the graduate data')
     p.add_argument('-e', '--certificates_directory', type=str, default='certificates', help='the directory where the new certificates will be copied')
     p.add_argument('-g', '--certificates_global_fields', type=str, default='', help='certificates global fields expressed as JSON string')
@@ -168,7 +181,7 @@ def main():
         sys.exit(1)
 
     conf = load_config()
-    populate_pdf_certificates(conf)
+    #populate_pdf_certificates(conf)
     cert_hashes = hash_certificates(conf)
     create_certificates_index(conf, cert_hashes)
 
