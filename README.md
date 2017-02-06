@@ -8,6 +8,8 @@ This project allows an institution to issue digital certificates. It creates pdf
 To use one needs to satisfy the following:
   - Have a local Bitcoin node running (testnet or mainnet)
   - Have python 3 installed and knowledge on using virtualenv
+  - Have a Java Runtime Environment available -- note that most systems have one by default
+    - this was necessary to properly handle UTF-8 characters while populating the certificate; no python OS project could handle this
   - Basic knowledge of the operating system (examples are given on a Debian-based linux system)
 
 ## Installation
