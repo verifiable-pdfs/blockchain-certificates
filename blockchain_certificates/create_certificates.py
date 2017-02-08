@@ -181,7 +181,7 @@ def main():
         sys.exit(1)
 
     conf = load_config()
-    #populate_pdf_certificates(conf)
+    populate_pdf_certificates(conf)
     cert_hashes = hash_certificates(conf)
     create_certificates_index(conf, cert_hashes)
 

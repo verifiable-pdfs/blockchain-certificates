@@ -106,7 +106,7 @@ def issue_hash(conf):
 
 '''
 Loads and returns the configuration options (either from --config or from
-specifying the specific options.
+specifying the specific options).
 '''
 def load_config():
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
