@@ -14,15 +14,19 @@ To use one needs to satisfy the following:
 
 ## Installation
 1. Create a new python virtual environment
+
 `$ python3 -m venv new_py3_env`
 
 2. Activate new environment
+
 `$ source new_py3_env/bin/activate`
 
 3. Get the code from github and go to that directory (a package python might be created in the future)
-`$ git clone https//github.com/UNIC/PROJ... && cd PROJ`
+
+`$ git clone https//github.com/UniversityOfNicosia/blockchain-certificates.git && cd blockchain-certificates`
 
 4. Run setup to install
+
 `$ pip install .`
 
 
