@@ -13,19 +13,19 @@ To use one needs to satisfy the following:
   - Basic knowledge of the operating system (examples are given on a Debian-based linux system)
 
 ## Installation
-1. Create a new python virtual environment
+  - Create a new python virtual environment
 
 `$ python3 -m venv new_py3_env`
 
-2. Activate new environment
+  - Activate new environment
 
 `$ source new_py3_env/bin/activate`
 
-3. Get the code from github and go to that directory (a package python might be created in the future)
+  - Get the code from github and go to that directory (a package python might be created in the future)
 
 `$ git clone https//github.com/UniversityOfNicosia/blockchain-certificates.git && cd blockchain-certificates`
 
-4. Run setup to install
+  - Run setup to install
 
 `$ pip install .`
 
