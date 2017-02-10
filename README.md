@@ -33,16 +33,16 @@ Run setup to install
 ## Scripts and Usage
 Two scripts will be made available, `create-certificates` and `publish-hash`. Both take several command-line options and option `-h` provides help. However, we do strongly recommend to use a config file to configure the scripts. Both scripts use the same configuration file since they share options. You can then, if needed, use some of the command-line options to override options from the configuration file.
 
-In addition to setting up the configuration file (consult the following section) one needs to provide:
+In addition setting up the configuration file (consult the following section) one needs to provide:
 
 __Pdf certificate template__
-:	This is the pdf certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduages (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
+:	This is the pdf certificate template that will be used to create all the certificates. It will contain the certificate exactly as you want it displayed with placeholders to be filled in for each graduages (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) those fields. The fields need to be named similarly to the header of the CSV file column that is expected to match.
 
 __CSV graduates file__
 :	This is a CSV file that contains all the fields required to populate the certificate template. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the columns of the pdf template and fill them accordingly.
 
 ### Best Practices
-We recommend to create a new folder (working directory) where everything will take place. Thus, all files used and all files created are organized properly in one place.
+We recommend to create a new folder (working directory) where everything will take place there. Thus, all files used and all files created are organized properly in one place.
 
 Example:
 ```
@@ -73,7 +73,7 @@ Given the example directory structure from above and a proper config.ini file it
 $ publish-hash -c path/to/working_directory/config.ini
 ```
 
-## Configuration Options (config.ini)
+## Configuration
 
 |Option|Explanation and example|
 |------|-----|
