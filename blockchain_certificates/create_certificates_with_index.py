@@ -7,6 +7,8 @@ import configargparse
 from blockchain_certificates import pdf_utils
 
 
+
+
 '''
 Loads and returns the configuration options (either from --config or from
 specifying the specific options.
@@ -18,8 +20,11 @@ def load_config():
     p.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-d', '--working_directory', type=str, default='.', help='the main working directory - all paths/files are relative to this')
     p.add_argument('-p', '--pdf_cert_template_file', type=str, default='cert_template.pdf', help='the pdf certificate form to populate')
-    p.add_argument('-i', '--issuer', type=str, help='the name of the institution to (added in certificate metadata)')
-    p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
+    p.add_argument('-o', '--output_pdf_index_file', type=str, default='index_document.pdf', help='the name of the pdf index document that will be created')
+    p.add_argument('-i', '--institution_name', type=str, help='the name of the institution to display in the the index document')
+    p.add_argument('-t', '--index_title', type=str, help='the title of the index document')
+    p.add_argument('-s', '--index_issuing_text', type=str, help='the text describing date and address of transaction')
+    p.add_argument('-x', '--index_validation_text', type=str, action='append', help='the text describing the process of validating the certificate')
     p.add_argument('-v', '--graduates_csv_file', type=str, default='graduates.csv', help='the csv file with the graduate data')
     p.add_argument('-e', '--certificates_directory', type=str, default='certificates', help='the directory where the new certificates will be copied')
     p.add_argument('-g', '--certificates_global_fields', type=str, default='', help='certificates global fields expressed as JSON string')
@@ -34,9 +39,9 @@ def main():
         sys.exit(1)
 
     conf = load_config()
-    pdf_utils.populate_pdf_certificates(conf)
-    #cert_hashes = pdf_utils.hash_certificates(conf)
-    #pdf_utils.create_certificates_index(conf, cert_hashes)
+    pdf_utils.populate_pdf_certificates(conf, False)
+    cert_hashes = pdf_utils.hash_certificates(conf)
+    pdf_utils.create_certificates_index(conf, cert_hashes)
 
 if __name__ == "__main__":
     main()

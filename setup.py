@@ -10,7 +10,7 @@ setup(name='blockchain-certificates',
       version=__version__,
       description='Create pdf certificate files and issue on the blockchain!',
       author='Konstantinos Karasavvas',
-      license='MIT',
+      license='AGPLv3',
       packages=['blockchain_certificates'],
       #packages=find_packages(),
       install_requires=requirements,
@@ -26,8 +26,9 @@ setup(name='blockchain-certificates',
       zip_safe=False,
       entry_points={
           'console_scripts': [
-              'create-certificates = blockchain_certificates.create_certificates:main',
-              'publish-hash = blockchain_certificates.publish_hash:main'
+              'create-certificates-with-index = blockchain_certificates.create_certificates_with_index:main',
+              'publish-index-hash = blockchain_certificates.publish_hash:main',
+              'create-certificates = blockchain_certificates.create_certificates:main'
           ]
       }
      )

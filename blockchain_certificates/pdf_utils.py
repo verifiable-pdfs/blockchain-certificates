@@ -7,14 +7,17 @@ import csv
 import json
 import glob
 import hashlib
+from pdfrw import PdfReader, PdfWriter, PdfDict
 from fpdf import FPDF
 
+NO_METADATA_FILE_PREFIX = "_no_metadata_"
 
 '''
 Populates a pdf form template with values from a CSV file to generate the pdf
-certificates.
+certificates. By default it adds metadata in the pdf file before hashing (only
+for the new process that doesn't have an index pdf file).
 '''
-def populate_pdf_certificates(conf):
+def populate_pdf_certificates(conf, with_metadata=True):
     pdf_cert_template_file = os.path.join(conf.working_directory, conf.pdf_cert_template_file)
     graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
@@ -24,14 +27,27 @@ def populate_pdf_certificates(conf):
     print('graduates_csv_file:\t{}'.format(graduates_csv_file))
     print('certificates_directory:\t{}'.format(certificates_directory))
     print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
+    if with_metadata:
+        print('issuer:\t\t\t{}'.format(conf.issuer))
+        print('issuer_address:\t\t{}'.format(conf.issuing_address))
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
         sys.exit()
 
+    # create certs_dir if it does not exist
+    os.makedirs(certificates_directory, exist_ok=True)
+
     data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
     for cert_data in data:
-        _fill_pdf_form(cert_data, certificates_directory,
-                       pdf_cert_template_file, conf.cert_names_csv_column)
+        # get name to use for cert name 
+        fullname = cert_data[conf.cert_names_csv_column]
+        out_file = os.path.join(certificates_directory, fullname + ".pdf")
+
+        _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, with_metadata)
+
+        if with_metadata:
+            _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address)
+
 
 def _process_csv(csv_file, global_fields_str):
     headers = []
@@ -53,18 +69,12 @@ def _process_csv(csv_file, global_fields_str):
     return data
 
 
-"""
+'''
 Fills in the pdf form using java code that uses the itextpdf java library. This
 library is much better than the one used in pdftk (python alternative) and more
 importantly it properly supports UTF-8 characters.
-"""
-def _fill_pdf_form(fields, certs_dir, pdf_cert_template_file, cert_names_csv_column):
-    # create certs_dir if it does not exist
-    os.makedirs(certs_dir, exist_ok=True)
-
-    # get name to use for cert name
-    fullname = fields[cert_names_csv_column]
-    out_file = os.path.join(certs_dir, fullname + ".pdf")
+'''
+def _fill_pdf_form(fields, pdf_cert_template_file, out_file, with_metadata):
 
     # prepare arguements for java
     fields_json_string = json.dumps(fields).replace('"', '\\"')
@@ -75,6 +85,21 @@ def _fill_pdf_form(fields, certs_dir, pdf_cert_template_file, cert_names_csv_col
     # TODO: cmd too long, cleanup
     cmd = 'java -cp {java_path}{pathsep}{java_path}{sep}itextpdf-5.5.10.jar{pathsep}{java_path}{sep}json-simple-1.1.1.jar FillPdf "{pdf_cert_template_file}" "{out_file}" "{fields_json_string}"'.format(java_path=java_path, pathsep=os.path.pathsep, sep=os.path.sep, pdf_cert_template_file=pdf_cert_template_file, out_file=out_file, fields_json_string=fields_json_string)
     os.system(cmd)
+
+    if not with_metadata:
+        # print progress
+        print('.', end="", flush=True)
+
+
+'''
+'''
+def _fill_pdf_metadata(out_file, issuer, issuer_address):
+    # add the metadata
+    metadata = PdfDict(issuer=issuer, issuer_address=issuer_address)
+    pdf = PdfReader(out_file)
+    pdf.Info.update(metadata)
+    PdfWriter().write(out_file, pdf)
+
     # print progress
     print('.', end="", flush=True)
 
