@@ -20,32 +20,37 @@ from bitcoin.wallet import *
 '''
 Issues a hash to the Bitcoin's blockchain using OP_RETURN
 '''
-def issue_hash(conf):
-    pdf_index_file = os.path.join(conf.working_directory, conf.output_pdf_index_file)
+def issue_hash(conf, with_metadata, merkle_root):
     print('\nConfigured values are:\n')
     print('working_directory:\t{}'.format(conf.working_directory))
-    print('pdf_index_file:\t\t{}'.format(pdf_index_file))
     print('issuing_address:\t{}'.format(conf.issuing_address))
     print('full_node_url:\t\t{}'.format(conf.full_node_url))
     print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
     print('testnet:\t\t{}'.format(conf.testnet))
     print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
     print('hash_prefix:\t\t{}'.format(conf.hash_prefix))
+
+    hash_hex = ""
+    if with_metadata:
+        hash_hex = merkle_root
+    else:
+        pdf_index_file = os.path.join(conf.working_directory, conf.output_pdf_index_file)
+        print('pdf_index_file:\t\t{}'.format(pdf_index_file))
+        # get index hash from file
+        with open(pdf_index_file, 'rb') as index:
+            hash_hex = hashlib.sha256(index.read()).hexdigest()
+
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
         sys.exit()
 
     full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
-    # get index hash with prefix
-    index_hash = ""
-    with open(pdf_index_file, 'rb') as index:
-        index_hash = hashlib.sha256(index.read()).hexdigest()
 
     if(conf.hash_prefix):
-        final_index_hash = conf.hash_prefix + index_hash
+        blockchain_hash = conf.hash_prefix + hash_hex
     else:
-        final_index_hash = index_hash
+        blockchain_hash = hash_hex
 
     # initialize full node connection
     if(conf.testnet):
@@ -61,6 +66,7 @@ def issue_hash(conf):
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
                      key=lambda x: hash(x['amount']))
+
     issuing_pubkey = proxy.validateaddress(conf.issuing_address)['pubkey']
 
     tx_inputs = [ CMutableTxIn(unspent[0]['outpoint']) ]
@@ -69,7 +75,7 @@ def issue_hash(conf):
     change_script_out = CBitcoinAddress(conf.issuing_address).to_scriptPubKey()
     change_output = CMutableTxOut(input_amount, change_script_out)
 
-    op_return_output = CMutableTxOut(0, CScript([OP_RETURN, x(final_index_hash)]))
+    op_return_output = CMutableTxOut(0, CScript([OP_RETURN, x(blockchain_hash)]))
     tx_outputs = [ change_output, op_return_output ]
 
     tx = CMutableTransaction(tx_inputs, tx_outputs)
@@ -100,8 +106,7 @@ def issue_hash(conf):
         sys.exit()
 
     tx_id = b2lx(proxy.sendrawtransaction(signed_tx))
-    print('Transaction was sent to the network. The transaction id is:\n{}'.format(tx_id))
-
+    return tx_id
 
 
 '''
@@ -131,7 +136,9 @@ def main():
         sys.exit(1)
 
     conf = load_config()
-    issue_hash(conf)
+    txid = issue_hash(conf, False)
+    print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
+
 
 if __name__ == "__main__":
     main()

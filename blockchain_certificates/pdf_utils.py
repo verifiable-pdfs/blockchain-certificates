@@ -10,7 +10,6 @@ import hashlib
 from pdfrw import PdfReader, PdfWriter, PdfDict
 from fpdf import FPDF
 
-NO_METADATA_FILE_PREFIX = "_no_metadata_"
 
 '''
 Populates a pdf form template with values from a CSV file to generate the pdf
@@ -92,10 +91,13 @@ def _fill_pdf_form(fields, pdf_cert_template_file, out_file, with_metadata):
 
 
 '''
+Inserts standard metadata to a pdf certfificate. Currently issuer name and
+address as well as an empty chainpoint_proof key.
 '''
 def _fill_pdf_metadata(out_file, issuer, issuer_address):
     # add the metadata
-    metadata = PdfDict(issuer=issuer, issuer_address=issuer_address)
+    metadata = PdfDict(issuer=issuer, issuer_address=issuer_address,
+                       chainpoint_proof='')
     pdf = PdfReader(out_file)
     pdf.Info.update(metadata)
     PdfWriter().write(out_file, pdf)
