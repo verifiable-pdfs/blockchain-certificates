@@ -35,10 +35,10 @@ The script that will be made available is `create-certificates`. Optionally `val
 In addition to setting up the configuration file (consult the following section) one needs to provide:
 
 __Pdf certificate template__
-:	This is the PDF certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduages (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
+:	This is the PDF certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduates (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
 
 __CSV graduates file__
-:	This is a CSV file that contains all the fields required to populate the certificate template. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the columns of the PDF template and fill them accordingly.
+:	This is a CSV file that contains all the fields required to populate the certificate template. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the placeholder fields of the PDF template and fill them accordingly.
 
 ### Best Practices
 We recommend to create a new folder (working directory) where everything will take place. Thus, all files used and all files created are organized properly in one place.
