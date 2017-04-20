@@ -19,6 +19,7 @@ key is "chainpoint_proof"
 def insert_proof_to_certificates(conf, cp, txid):
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
     cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+    print('')
     for ind, val in enumerate(cert_files):
         proof = json.dumps( cp.get_receipt(ind, txid) )
         metadata = PdfDict(chainpoint_proof=proof)
@@ -77,6 +78,7 @@ def main():
     cp = prepare_chainpoint_tree(cert_hashes)
     txid = publish_hash.issue_hash(conf, True, cp.get_merkle_root())
     insert_proof_to_certificates(conf, cp, txid)
+    print('\nTx hash: {}'.format(txid))
 
 
 if __name__ == "__main__":
