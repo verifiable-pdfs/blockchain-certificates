@@ -6,10 +6,16 @@ from blockchain_certificates import __version__
 install_reqs = parse_requirements('requirements.txt', session=False)
 requirements = [str(ir.req) for ir in install_reqs]
 
+with open('README.rst') as readme:
+    long_description = readme.read()
+
 setup(name='blockchain-certificates',
       version=__version__,
       description='Create pdf certificate files and issue on the blockchain!',
+      long_description=long_description,
       author='Konstantinos Karasavvas',
+      author_email='kkarasavvas@gmail.com',
+      url='https://github.com/UniversityOfNicosia/blockchain-certificates',
       license='AGPLv3',
       packages=['blockchain_certificates'],
       #packages=find_packages(),
@@ -31,6 +37,7 @@ setup(name='blockchain-certificates',
               'create-certificates = blockchain_certificates.create_certificates:main',
               'validate-certificates = blockchain_certificates.validate_certificates:main'
           ]
-      }
+      },
+      keywords='blockchain academic certificates'
      )
 

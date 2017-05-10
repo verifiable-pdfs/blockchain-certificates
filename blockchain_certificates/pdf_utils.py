@@ -39,7 +39,7 @@ def populate_pdf_certificates(conf, with_metadata=True):
     data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
     for cert_data in data:
         # get name to use for cert name 
-        fullname = cert_data[conf.cert_names_csv_column]
+        fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
         out_file = os.path.join(certificates_directory, fullname + ".pdf")
 
         _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, with_metadata)
