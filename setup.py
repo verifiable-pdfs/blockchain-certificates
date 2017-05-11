@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 from pip.req import parse_requirements
 from blockchain_certificates import __version__
 
@@ -18,7 +18,6 @@ setup(name='blockchain-certificates',
       url='https://github.com/UniversityOfNicosia/blockchain-certificates',
       license='AGPLv3',
       packages=['blockchain_certificates'],
-      #packages=find_packages(),
       install_requires=requirements,
       package_data={
           'blockchain_certificates': ['java/itextpdf-5.5.10.jar',
