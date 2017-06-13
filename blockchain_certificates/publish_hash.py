@@ -65,7 +65,7 @@ def issue_hash(conf, with_metadata, merkle_root):
     # create transaction
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
-                     key=lambda x: hash(x['amount']))
+                     key=lambda x: hash(x['amount']), reverse=True)
 
     issuing_pubkey = proxy.validateaddress(conf.issuing_address)['pubkey']
 
@@ -129,14 +129,17 @@ def load_config():
     args, _ = p.parse_known_args()
     return args
 
-
+# used primarily for testing
 def main():
     if sys.version_info.major < 3:
         sys.stderr.write('Python 3 is required!')
         sys.exit(1)
 
     conf = load_config()
-    txid = issue_hash(conf, False)
+
+    # test with metadata and fake root
+    txid = issue_hash(conf, True, "fake_test_root")
+
     print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
 
 
