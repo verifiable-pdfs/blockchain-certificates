@@ -29,6 +29,7 @@ def populate_pdf_certificates(conf, with_metadata=True):
     if with_metadata:
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
         sys.exit()
@@ -45,7 +46,8 @@ def populate_pdf_certificates(conf, with_metadata=True):
         _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, with_metadata)
 
         if with_metadata:
-            _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address)
+            _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
+                               conf.cert_metadata_columns, cert_data)
 
 
 def _process_csv(csv_file, global_fields_str):
@@ -94,9 +96,17 @@ def _fill_pdf_form(fields, pdf_cert_template_file, out_file, with_metadata):
 Inserts standard metadata to a pdf certfificate. Currently issuer name and
 address as well as an empty chainpoint_proof key.
 '''
-def _fill_pdf_metadata(out_file, issuer, issuer_address):
+def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
+    # create metadata objest (json)
+    metadata_object = {}
+    metadata_fields = columns.split(",")
+    for md in metadata_fields:
+        if md in data:
+            metadata_object[md] = data[md]
+
     # add the metadata
     metadata = PdfDict(issuer=issuer, issuer_address=issuer_address,
+                       metadata_object=json.dumps(metadata_object), 
                        chainpoint_proof='')
     pdf = PdfReader(out_file)
     pdf.Info.update(metadata)
@@ -156,23 +166,13 @@ def create_certificates_index(conf, cert_hashes):
 
 
 '''
-Hashes (sha256) all pdf files found in conf.certificates_directory and returns
-them as an array.
+Hashes (sha256) all files passed as an array and returns them as an array.
 '''
-def hash_certificates(conf):
-    certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
-    #print('\nWe will look for .pdf certificates in:\n{}\n'.format(certificates_directory))
-    #consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
-    #if not consent:
-    #    sys.exit()
-
-    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
-
+def hash_certificates(cert_files):
     hashes = []
     for f in cert_files:
         with open(f, 'rb') as cert:
             hashes.append(hashlib.sha256(cert.read()).hexdigest())
 
     return hashes
-
 
