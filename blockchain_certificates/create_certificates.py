@@ -16,9 +16,7 @@ from blockchain_certificates import publish_hash
 Inserts the ChainPointV2 proof as pdf metadata for each certificate. Metadata
 key is "chainpoint_proof"
 '''
-def insert_proof_to_certificates(conf, cp, txid):
-    certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
-    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+def insert_proof_to_certificates(conf, cp, txid, cert_files):
     print('')
     for ind, val in enumerate(cert_files):
         proof = json.dumps( cp.get_receipt(ind, txid) )
@@ -58,6 +56,7 @@ def load_config():
     p.add_argument('-e', '--certificates_directory', type=str, default='certificates', help='the directory where the new certificates will be copied')
     p.add_argument('-g', '--certificates_global_fields', type=str, default='', help='certificates global fields expressed as JSON string')
     p.add_argument('-f', '--cert_names_csv_column', type=str, default='name', help='use this column from csv file for naming the certificates')
+    p.add_argument('-m', '--cert_metadata_columns', type=str, default='name,degree,grade', help='the specified columns from the csv or global fields will be included as json metadata')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
@@ -74,10 +73,16 @@ def main():
 
     conf = load_config()
     pdf_utils.populate_pdf_certificates(conf)
-    cert_hashes = pdf_utils.hash_certificates(conf)
+
+    # get certificate file list here (to ensure it is identical to both
+    # 'hash_certificates' and 'insert_proof_to_certificates'
+    certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
+    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+
+    cert_hashes = pdf_utils.hash_certificates(cert_files)
     cp = prepare_chainpoint_tree(cert_hashes)
     txid = publish_hash.issue_hash(conf, True, cp.get_merkle_root())
-    insert_proof_to_certificates(conf, cp, txid)
+    insert_proof_to_certificates(conf, cp, txid, cert_files)
     print('\nTx hash: {}'.format(txid))
 
 

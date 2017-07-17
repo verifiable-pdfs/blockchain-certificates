@@ -3,9 +3,9 @@ Populates the required pdf form templates: both for individual certificates and 
 '''
 import os
 import sys
+import glob
 import configargparse
 from blockchain_certificates import pdf_utils
-
 
 
 
@@ -40,7 +40,12 @@ def main():
 
     conf = load_config()
     pdf_utils.populate_pdf_certificates(conf, False)
-    cert_hashes = pdf_utils.hash_certificates(conf)
+
+    # get certificate file list 
+    certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
+    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+
+    cert_hashes = pdf_utils.hash_certificates(cert_files)
     pdf_utils.create_certificates_index(conf, cert_hashes)
 
 if __name__ == "__main__":
