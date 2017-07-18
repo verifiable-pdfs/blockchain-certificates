@@ -5,13 +5,21 @@ This project allows an institution to issue digital certificates. It creates pdf
 
 ****
 
+More information on creating certificates  (**recommended**):
+
+<https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates.md>
+
+****
+
+More information on issuing existing certificates:
+
+<https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/issue_certificates.md>
+
+****
+
 More information on creating certificates with an index file: 
 
 <https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates_with_index.md>
 
-****
 
-More information on creating certificates without an index file (**recommended**):
-
-<https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates.md>
 

@@ -12,13 +12,19 @@ it is easier to verify manually.
 
 --------------
 
-More information on creating certificates with an index file:
-
-https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates_with_index.md
-
---------------
-
-More information on creating certificates without an index file
+More information on creating certificates 
 (**recommended**):
 
 https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates.md
+
+--------------
+
+More information on issuing existing certificates:
+
+https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/issue_certificates.md
+
+--------------
+
+More information on creating certificates with an index file
+
+https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates_with_index.md

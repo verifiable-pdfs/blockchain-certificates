@@ -34,7 +34,8 @@ setup(name='blockchain-certificates',
               'create-certificates-with-index = blockchain_certificates.create_certificates_with_index:main',
               'publish-index-hash = blockchain_certificates.publish_hash:main',
               'create-certificates = blockchain_certificates.create_certificates:main',
-              'validate-certificates = blockchain_certificates.validate_certificates:main'
+              'validate-certificates = blockchain_certificates.validate_certificates:main',
+              'issue-certificates = blockchain_certificates.issue_certificates:main'
           ]
       },
       keywords='blockchain academic certificates'

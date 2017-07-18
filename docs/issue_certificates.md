@@ -1,14 +1,12 @@
 ## Create PDF certificates 
-This method allows an institution to issue digital certificates. It creates PDF certificate files and issues a hash representing those files into the Bitcoin network's blockchain. The general process is as follows:
-  - A PDF template file is populated using a CSV that contains all the graduates; a PDF certificate is created for each entry in the CSV
+This method allows an institution to issue digital certificates. It issues existing PDF certificate files and publishes a hash representing those files into the Bitcoin network's blockchain. The general process is as follows:
+  - All the PDF certificates are expected. A CSV with the certificates data is used to add metadata to each certificate; all PDF certificates now include the metadata
   - The PDF certificates are hashed (sha256) and a merkle tree is created, the merkle root of which is published into the blockchain
 
 ## Requirements
 To use one needs to satisfy the following:
   - Have a local Bitcoin node running (testnet or mainnet)
   - Have python 3 installed and knowledge on using virtualenv
-  - Have a Java Runtime Environment available -- note that most systems have one by default
-    - this was necessary to properly handle UTF-8 characters while populating the certificate; no python OS project could handle this
   - Basic knowledge of the operating system (examples are given on a Debian-based linux system)
 
 ## Installation
@@ -30,15 +28,15 @@ Run setup to install
 
 
 ## Scripts and Usage
-The script that will be made available is `create-certificates`. Optionally `validate_certificates` can be used after issuing to validate the certificates. Both take several command-line options and option `-h` provides help. However, we do strongly recommend to use a config file to configure the scripts. Both scripts use the same configuration file since they share options. You can then, if needed, use some of the command-line options to override options from the configuration file.
+The script that will be made available is `issue-certificates`. Optionally `validate_certificates` can be used after issuing to validate the certificates. Both take several command-line options and option `-h` provides help. However, we do strongly recommend to use a config file to configure the scripts. Both scripts use the same configuration file since they share options. You can then, if needed, use some of the command-line options to override options from the configuration file.
 
 In addition to setting up the configuration file (consult the following section) one needs to provide:
 
-__Pdf certificate template__
-:	This is the PDF certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduates (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
-
 __CSV graduates file__
-:	This is a CSV file that contains all the fields required to populate the certificate template. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the placeholder fields of the PDF template and fill them accordingly.
+:	This is a CSV file that contains all the data that we wish to include as metadata for each certificate. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the `cert_metadata_columns` that are selected to go to the `metadata_object`.
+
+__Existing certificates__
+:	Place all existing certificates in the directory specified by `certificates_directory`
 
 ### Best Practices
 We recommend to create a new folder (working directory) where everything will take place. Thus, all files used and all files created are organized properly in one place.
@@ -46,21 +44,21 @@ We recommend to create a new folder (working directory) where everything will ta
 Example:
 ```
 working_directory
-      |--- certificate_template.pdf
+      |--- certificates/
       |--- graduates.csv
       `--- config.ini
 ```
 
-### Usage: `create-certificates`
-Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. Then PDF metadata `issuer` and `issuer_address` are added to each certificate as well as a `metadata_object` that is a JSON object containing all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `issuer`, `issuer_address`, and `chainpoint_proof`.
+### Usage: `issue-certificates`
+Issues the certificates in the `certificates_directory` after adding the appropriate metadata. The PDF metadata `issuer` and `issuer_address` are added to each certificate as well as a `metadata_object` that is a JSON object containing all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `issuer`, `issuer_address`, and `chainpoint_proof`.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
 ```
-$ create-certificates -c path/to/working_directory/config.ini
+$ issue-certificates -c path/to/working_directory/config.ini
 ```
 
-The script will confirm the arguments passed and then it will create all the certificates and publish the merkle root hash to the blockchain. The certificates are finished, self-contained and ready to be shared.
+The script will confirm the arguments passed and then it will add the metadata to the certificates and publish the merkle root hash to the blockchain. The certificates are finished, self-contained and ready to be shared.
 
 
 ### Usage: `validate-certificates`
@@ -79,7 +77,6 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 |**Global**||
 |working_direcory|The working directory for issuing the certificates. All paths/files are always relative to this directory. Example: `/home/kostas/spring_2016_graduates`|
 |**PDF certificates related**||
-|pdf_cert_template|The name of the PDF template file relative to `working_directory`. Example: `certificate_template.pdf`|
 |graduates_csv_file|The name of the comma separated value file that contains individual information for each graduate. It is relative to `working_directory`. Example: `graduates.csv`|
 |certificates_directory|The directory were all the new certificates will be stored. It is recommended that this directory is always empty before running the script. If it doesn't exist it will be created. It is relative to `working_directory`. Example: `certificates`|
 |certificates_global_fields|A simple key-value object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{"date": "5 Dec 2016"}`|
@@ -96,5 +93,5 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 |hash_prefix|It is possible to prepend the index document's hash with a value to differentiate this OP_RETURN transaction from others. You should provide directly the hex value here using any online conversion tool to convert to hex. It is optional and you can comment it out for no prefix. Example value for prepending the string "ULand " is: `554c616e6420`.
 
 ## Example project to experiment
-The `sample_create_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates and the index file. Just delete the `certificates` directory and run the process again to create them. Note that the sample `config.ini` needs to be updated with the path that the `sample_create_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
+The `sample_issue_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates and the index file. Just run the process again to add the metadata and issue the merkle root to the blockchain. Note that the sample `config.ini` needs to be updated with the path that the `sample_issue_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
 

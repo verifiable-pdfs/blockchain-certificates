@@ -12,6 +12,57 @@ from fpdf import FPDF
 
 
 '''
+Adds metadata only with values from a CSV file to ready-made PDF certificates.
+Expects certificates_directory with all the PDF certificates. The names of the
+certificates must begin with the column chosen in cert_names_csv_column.
+'''
+def add_metadata_only_to_pdf_certificates(conf):
+    graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
+    certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
+    print('\nConfigured values are:\n')
+    print('working_directory:\t{}'.format(conf.working_directory))
+    print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+    print('certificates_directory:\t{}'.format(certificates_directory))
+    print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
+    print('issuer:\t\t\t{}'.format(conf.issuer))
+    print('issuer_address:\t\t{}'.format(conf.issuing_address))
+    print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+    consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
+    if not consent:
+        sys.exit()
+
+    # check if certificates directory exists and exit if not
+    if(not os.path.isdir(certificates_directory)):
+        print('Directory {} does not exist.  Exiting.'.format(certificates_directory))
+        sys.exit()
+
+    # get a list of all PDF files and exit if none
+    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+    if not cert_files:
+        print('Directory {} is empty. Exiting.'.format(certificates_directory))
+        sys.exit()
+
+    data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
+    for cert_data in data:
+        certificate_file = None
+        # get student_id to use to get the appropriate certificate
+        student_id = cert_data[conf.cert_names_csv_column]
+        # find PDF file that starts with student_id
+        for fp in cert_files:
+            filename = os.path.basename(fp)
+            if os.path.isfile(fp) and filename.startswith(student_id):
+                certificate_file = fp
+                break
+
+        if certificate_file:
+            _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
+                               conf.cert_metadata_columns, cert_data)
+        else:
+            print('\nSkipping {}\n'.format(filename))
+
+
+
+'''
 Populates a pdf form template with values from a CSV file to generate the pdf
 certificates. By default it adds metadata in the pdf file before hashing (only
 for the new process that doesn't have an index pdf file).
