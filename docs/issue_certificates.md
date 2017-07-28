@@ -1,4 +1,4 @@
-## Create PDF certificates 
+## Issue PDF certificates 
 This method allows an institution to issue digital certificates. It issues existing PDF certificate files and publishes a hash representing those files into the Bitcoin network's blockchain. The general process is as follows:
   - All the PDF certificates are expected. A CSV with the certificates data is used to add metadata to each certificate; all PDF certificates now include the metadata
   - The PDF certificates are hashed (sha256) and a merkle tree is created, the merkle root of which is published into the blockchain
@@ -50,7 +50,7 @@ working_directory
 ```
 
 ### Usage: `issue-certificates`
-Issues the certificates in the `certificates_directory` after adding the appropriate metadata. The PDF metadata `issuer` and `issuer_address` are added to each certificate as well as a `metadata_object` that is a JSON object containing all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `issuer`, `issuer_address`, and `chainpoint_proof`.
+Issues the certificates in the `certificates_directory` after adding the appropriate metadata. The PDF metadata `metadata_object` is added to the PDF. It is a JSON object that always contains `issuer` and `issuer_address` as well as all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `metadata_object`, and `chainpoint_proof`.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 

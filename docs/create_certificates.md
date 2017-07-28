@@ -52,7 +52,7 @@ working_directory
 ```
 
 ### Usage: `create-certificates`
-Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. Then PDF metadata `issuer` and `issuer_address` are added to each certificate as well as a `metadata_object` that is a JSON object containing all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `issuer`, `issuer_address`, and `chainpoint_proof`.
+Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. The PDF metadata `metadata_object` is added to the PDF. It is a JSON object that always contains `issuer` and `issuer_address` as well as all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `metadata_object`, and `chainpoint_proof`.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 

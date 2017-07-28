@@ -81,7 +81,7 @@ def main():
         for cert in certificates:
             if os.path.isfile(cert):
                 filename = os.path.basename(cert)
-                if(filename.endswith('.pdf')):
+                if(filename.lower().endswith('.pdf')):
                     if validate_certificate(cert, conf.hash_prefix, conf.testnet):
                         print('Certificate {} is valid!'.format(cert))
                     else:

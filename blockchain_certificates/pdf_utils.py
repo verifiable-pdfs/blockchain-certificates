@@ -37,7 +37,7 @@ def add_metadata_only_to_pdf_certificates(conf):
         sys.exit()
 
     # get a list of all PDF files and exit if none
-    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+    cert_files = glob.glob(certificates_directory + os.path.sep + "*.[pP][dD][fF]")
     if not cert_files:
         print('Directory {} is empty. Exiting.'.format(certificates_directory))
         sys.exit()
@@ -155,9 +155,17 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
         if md in data:
             metadata_object[md] = data[md]
 
+    # issuer and issuer_address used to go as separate metadata fields
+    # but now go to the metadata_object. They are still compulsory!
+    # The validator that reads metadata requires to look for issuer and
+    # issuer_address both in the metadata_object and if not fount it has
+    # to look for them as separate metadata fields for backwards 
+    # compatibility (certificates issued with v0.9.3 and before)
+    metadata_object['issuer'] = issuer
+    metadata_object['issuer_address'] = issuer_address
+
     # add the metadata
-    metadata = PdfDict(issuer=issuer, issuer_address=issuer_address,
-                       metadata_object=json.dumps(metadata_object), 
+    metadata = PdfDict(metadata_object=json.dumps(metadata_object),
                        chainpoint_proof='')
     pdf = PdfReader(out_file)
     pdf.Info.update(metadata)

@@ -76,7 +76,7 @@ def main():
     # get certificate file list here (to ensure it is identical to both
     # 'hash_certificates' and 'insert_proof_to_certificates')
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
-    cert_files = glob.glob(certificates_directory + os.path.sep + "*.pdf")
+    cert_files = glob.glob(certificates_directory + os.path.sep + "*.[pP][dD][fF]")
 
     cert_hashes = pdf_utils.hash_certificates(cert_files)
     cp = prepare_chainpoint_tree(cert_hashes)
