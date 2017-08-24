@@ -17,7 +17,7 @@ More information on issuing existing certificates:
 
 ****
 
-More information on creating certificates with an index file: 
+More information on creating certificates with an index file (deprecated): 
 
 <https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates_with_index.md>
 

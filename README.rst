@@ -26,5 +26,6 @@ https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/
 --------------
 
 More information on creating certificates with an index file
+(deprecated):
 
 https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates_with_index.md
