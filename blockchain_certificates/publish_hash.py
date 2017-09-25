@@ -138,7 +138,7 @@ def main():
     conf = load_config()
 
     # test with metadata and fake root
-    txid = issue_hash(conf, True, "fake_test_root")
+    txid = issue_hash(conf, True, "38393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
 
     print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
 
