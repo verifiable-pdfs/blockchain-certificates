@@ -20,7 +20,7 @@ from bitcoin.wallet import *
 '''
 Issues a hash to the Bitcoin's blockchain using OP_RETURN
 '''
-def issue_hash(conf, with_metadata, merkle_root):
+def issue_hash(conf, merkle_root):
     print('\nConfigured values are:\n')
     print('working_directory:\t{}'.format(conf.working_directory))
     print('issuing_address:\t{}'.format(conf.issuing_address))
@@ -30,15 +30,7 @@ def issue_hash(conf, with_metadata, merkle_root):
     print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
     print('hash_prefix:\t\t{}'.format(conf.hash_prefix))
 
-    hash_hex = ""
-    if with_metadata:
-        hash_hex = merkle_root
-    else:
-        pdf_index_file = os.path.join(conf.working_directory, conf.output_pdf_index_file)
-        print('pdf_index_file:\t\t{}'.format(pdf_index_file))
-        # get index hash from file
-        with open(pdf_index_file, 'rb') as index:
-            hash_hex = hashlib.sha256(index.read()).hexdigest()
+    hash_hex = merkle_root
 
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
@@ -138,7 +130,7 @@ def main():
     conf = load_config()
 
     # test with metadata and fake root
-    txid = issue_hash(conf, True, "38393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
+    txid = issue_hash(conf, "38393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
 
     print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
 

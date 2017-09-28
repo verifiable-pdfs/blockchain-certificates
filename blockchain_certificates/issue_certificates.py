@@ -80,7 +80,7 @@ def main():
 
     cert_hashes = pdf_utils.hash_certificates(cert_files)
     cp = prepare_chainpoint_tree(cert_hashes)
-    txid = publish_hash.issue_hash(conf, True, cp.get_merkle_root())
+    txid = publish_hash.issue_hash(conf, cp.get_merkle_root())
     insert_proof_to_certificates(conf, cp, txid, cert_files)
     print('\nTx hash: {}'.format(txid))
 
