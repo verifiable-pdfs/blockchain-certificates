@@ -64,10 +64,10 @@ def add_metadata_only_to_pdf_certificates(conf):
 
 '''
 Populates a pdf form template with values from a CSV file to generate the pdf
-certificates. By default it adds metadata in the pdf file before hashing (only
-for the new process that doesn't have an index pdf file).
+certificates. Also uses the CSV data to add metadata in the pdf file before 
+hashing.
 '''
-def populate_pdf_certificates(conf, with_metadata=True):
+def populate_pdf_certificates(conf):
     pdf_cert_template_file = os.path.join(conf.working_directory, conf.pdf_cert_template_file)
     graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
@@ -77,10 +77,9 @@ def populate_pdf_certificates(conf, with_metadata=True):
     print('graduates_csv_file:\t{}'.format(graduates_csv_file))
     print('certificates_directory:\t{}'.format(certificates_directory))
     print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
-    if with_metadata:
-        print('issuer:\t\t\t{}'.format(conf.issuer))
-        print('issuer_address:\t\t{}'.format(conf.issuing_address))
-        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+    print('issuer:\t\t\t{}'.format(conf.issuer))
+    print('issuer_address:\t\t{}'.format(conf.issuing_address))
+    print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
         sys.exit()
@@ -94,11 +93,10 @@ def populate_pdf_certificates(conf, with_metadata=True):
         fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
         out_file = os.path.join(certificates_directory, fullname + ".pdf")
 
-        _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, with_metadata)
+        _fill_pdf_form(cert_data, pdf_cert_template_file, out_file)
 
-        if with_metadata:
-            _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
-                               conf.cert_metadata_columns, cert_data)
+        _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
+                           conf.cert_metadata_columns, cert_data)
 
 
 def _process_csv(csv_file, global_fields_str):
@@ -126,7 +124,7 @@ Fills in the pdf form using java code that uses the itextpdf java library. This
 library is much better than the one used in pdftk (python alternative) and more
 importantly it properly supports UTF-8 characters.
 '''
-def _fill_pdf_form(fields, pdf_cert_template_file, out_file, with_metadata):
+def _fill_pdf_form(fields, pdf_cert_template_file, out_file):
 
     # prepare arguements for java
     fields_json_string = json.dumps(fields).replace('"', '\\"')
@@ -138,14 +136,13 @@ def _fill_pdf_form(fields, pdf_cert_template_file, out_file, with_metadata):
     cmd = 'java -cp {java_path}{pathsep}{java_path}{sep}itextpdf-5.5.10.jar{pathsep}{java_path}{sep}json-simple-1.1.1.jar FillPdf "{pdf_cert_template_file}" "{out_file}" "{fields_json_string}"'.format(java_path=java_path, pathsep=os.path.pathsep, sep=os.path.sep, pdf_cert_template_file=pdf_cert_template_file, out_file=out_file, fields_json_string=fields_json_string)
     os.system(cmd)
 
-    if not with_metadata:
-        # print progress
-        print('.', end="", flush=True)
 
 
 '''
-Inserts standard metadata to a pdf certfificate. Currently issuer name and
-address as well as an empty chainpoint_proof key.
+Inserts standard metadata to a pdf certfificate. All CSV fields in 'data'
+are added as metadata to the JSON metadata_object. It then adds the
+required 'issuer' and 'issuer_address' as well as an empty
+chainpoint_proof key.
 '''
 def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
     # create metadata objest (json)
@@ -173,54 +170,6 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
 
     # print progress
     print('.', end="", flush=True)
-
-
-'''
-Creates the index pdf file from scratch in order to both use the default
-Acroforms _and_ be able to add dynamic text, ie. the hashes
-'''
-def create_certificates_index(conf, cert_hashes):
-    pdf_index_file = os.path.join(conf.working_directory, conf.output_pdf_index_file)
-    print('\nIndex file will written in:\n{}\n'.format(pdf_index_file))
-    print('Institution name:\n{}\n'.format(conf.institution_name))
-    print('Index document title:\n{}\n'.format(conf.index_title))
-    print('Index issuing text:\n{}\n'.format(conf.index_issuing_text))
-    print('Index validation text:\n{}\n'.format(conf.index_validation_text))
-    consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
-    if not consent:
-        sys.exit()
-
-    input_hashes = '\n'.join(cert_hashes)
-
-    pdf = FPDF('L', 'mm', 'A4')
-    effective_page_width = pdf.w - 2*pdf.l_margin
-    pdf.add_page()
-
-    pdf.set_font('Arial', 'B', 32)
-    pdf.cell(effective_page_width, 30, conf.institution_name, 0, 2, 'C')
-
-    pdf.set_font('Arial', 'B', 18)
-    pdf.multi_cell(effective_page_width, 7, conf.index_title)
-    pdf.ln()
-
-    pdf.set_font('Times', '', 18)
-    pdf.multi_cell(effective_page_width, 7, conf.index_issuing_text)
-    pdf.ln()
-
-    for t in conf.index_validation_text:
-        pdf.set_font('Times', '', 16)
-        pdf.multi_cell(effective_page_width, 6, t)
-    pdf.ln()
-
-    pdf.add_page()
-    pdf.set_font('Times', 'B', 18)
-    pdf.cell(effective_page_width, 15, "The certificates' hashes follow:", 0, 2, 'C')
-
-    pdf.set_font('Times', '', 18)
-    for h in cert_hashes:
-        pdf.cell(effective_page_width, 6, h, 0, 0, 'C')
-        pdf.ln()
-    pdf.output(pdf_index_file, 'F')
 
 
 
