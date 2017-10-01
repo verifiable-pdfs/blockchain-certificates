@@ -8,6 +8,7 @@ import shutil
 import hashlib
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
+from blockchain_certificates import cert_protocol
 from blockchain_proofs import ChainPointV2
 
 '''
@@ -27,7 +28,9 @@ def get_and_remove_chainpoint_proof(pdf_file):
 '''
 Validate the certificate
 '''
-def validate_certificate(cert, hash_prefix, testnet):
+def validate_certificate(cert, issuer_identifier, testnet):
+    valid_certificate = False
+
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
@@ -47,10 +50,16 @@ def validate_certificate(cert, hash_prefix, testnet):
 
     # validate receipt
     cp = ChainPointV2()
-    if cp.validate_receipt(proof, filehash, hash_prefix, testnet):
-        return True
+    if cp.validate_receipt(proof, filehash, issuer_identifier, testnet):
+        valid_certificate = True
     else:
         return False
+
+    # blockchain receipt is valid but we need to also check if the certificate
+    # was revoked after issuing
+    # ...TODO
+    return True
+
 
 
 '''
@@ -63,7 +72,7 @@ def load_config():
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
-    p.add_argument('-p', '--hash_prefix', type=str, help='prepend the hash that we wish to issue with this hexadecimal')
+    p.add_argument('-p', '--issuer_identifier', type=str, help='optional 8 bytes issuer code to be displayed in the blockchain')
     p.add_argument('-f', nargs='+', help='a list of certificate pdf files to validate')
     args, _ = p.parse_known_args()
     return args
@@ -82,7 +91,7 @@ def main():
             if os.path.isfile(cert):
                 filename = os.path.basename(cert)
                 if(filename.lower().endswith('.pdf')):
-                    if validate_certificate(cert, conf.hash_prefix, conf.testnet):
+                    if validate_certificate(cert, conf.issuer_identifier, conf.testnet):
                         print('Certificate {} is valid!'.format(cert))
                     else:
                         print('Certificate {} is _not_ valid!'.format(cert))

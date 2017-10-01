@@ -18,9 +18,9 @@ from bitcoin.wallet import *
 
 
 '''
-Issues a hash to the Bitcoin's blockchain using OP_RETURN
+Issues bytes to the Bitcoin's blockchain using OP_RETURN.
 '''
-def issue_hash(conf, merkle_root):
+def issue_op_return(conf, op_return_bstring):
     print('\nConfigured values are:\n')
     print('working_directory:\t{}'.format(conf.working_directory))
     print('issuing_address:\t{}'.format(conf.issuing_address))
@@ -28,9 +28,9 @@ def issue_hash(conf, merkle_root):
     print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
     print('testnet:\t\t{}'.format(conf.testnet))
     print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
-    print('hash_prefix:\t\t{}'.format(conf.hash_prefix))
+    print('Hex bytes for OP_RETURN:\n{}'.format(op_return_hex_string))
 
-    hash_hex = merkle_root
+    op_return_cert_protocol = op_return_bstring
 
     consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
     if not consent:
@@ -38,13 +38,6 @@ def issue_hash(conf, merkle_root):
 
     full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
-
-    if(conf.hash_prefix):
-        blockchain_hash = conf.hash_prefix + hash_hex
-    else:
-        blockchain_hash = hash_hex
-
-    # initialize full node connection
     if(conf.testnet):
         bitcoin.SelectParams('testnet')
     else:
@@ -67,7 +60,7 @@ def issue_hash(conf, merkle_root):
     change_script_out = CBitcoinAddress(conf.issuing_address).to_scriptPubKey()
     change_output = CMutableTxOut(input_amount, change_script_out)
 
-    op_return_output = CMutableTxOut(0, CScript([OP_RETURN, x(blockchain_hash)]))
+    op_return_output = CMutableTxOut(0, CScript([OP_RETURN, op_return_cert_protocol]))
     tx_outputs = [ change_output, op_return_output ]
 
     tx = CMutableTransaction(tx_inputs, tx_outputs)
@@ -111,13 +104,11 @@ def load_config():
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-d', '--working_directory', type=str, default='.', help='the main working directory - all paths/files are relative to this')
-    p.add_argument('-o', '--output_pdf_index_file', type=str, default='index_document.pdf', help='the name of the pdf index document which hash will be stored in the blockchain')
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-f', '--tx_fee_per_byte', type=int, default=100, help='the fee per transaction byte in satoshis')
-    p.add_argument('-p', '--hash_prefix', type=str, help='prepend the hash that we wish to issue with this hexadecimal')
     args, _ = p.parse_known_args()
     return args
 
@@ -130,7 +121,7 @@ def main():
     conf = load_config()
 
     # test with metadata and fake root
-    txid = issue_hash(conf, "38393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
+    txid = issue_op_return(conf, "3132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
 
     print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
 
