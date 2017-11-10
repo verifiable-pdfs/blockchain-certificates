@@ -1,6 +1,6 @@
 '''
 Functions related to the creation of the OP_RETURN bytes in accordance
-to CERT meta-protocol for issuing/revoking certificates
+to CRED meta-protocol for issuing/revoking certificates
 on the blockchain.
 '''
 import hashlib
@@ -15,7 +15,7 @@ operators = {
 }
 
 '''
-Creates CERT protocol's issue certificates command
+Creates CRED protocol's issue certificates command
 '''
 def issue_cmd(issuer_identifier, merkle_root):
     bstring = _create_header() + operators['op_issue'] + _str_to_8_chars(issuer_identifier).encode('utf-8') + merkle_root.encode('utf-8')
@@ -23,7 +23,7 @@ def issue_cmd(issuer_identifier, merkle_root):
 
 
 '''
-Creates CERT protocol's revoke certificates batch command
+Creates CRED protocol's revoke certificates batch command
 '''
 def revoke_batch_cmd(txid):
     string = _create_header() + operators['op_revoke_batch']
@@ -31,7 +31,7 @@ def revoke_batch_cmd(txid):
 
 
 '''
-Creates CERT protocol's revoke certificates command
+Creates CRED protocol's revoke certificates command
 '''
 def revoke_certs_cmd(txid, cert_hash1, cert_hash2):
     string = _create_header() + operators['op_revoke_certs']
@@ -41,7 +41,7 @@ def revoke_certs_cmd(txid, cert_hash1, cert_hash2):
 
 
 '''
-Creates CERT protocol's revoke address command
+Creates CRED protocol's revoke address command
 '''
 def revoke_address_cmd(address):
     string = _create_header() + operators['op_revoke_address'] + address
@@ -49,8 +49,8 @@ def revoke_address_cmd(address):
 
 
 '''
-Creates the header for the CERT protocol. Currently consists of
-'CERT' and a fixed version in hex.
+Creates the header for the CRED protocol. Currently consists of
+'CRED' and a fixed version in hex.
 
 Versioning: first byte major, second byte minor:
     0001=v0.1 - 01.01=v1.1 - 00.0a=v0.10
@@ -58,7 +58,7 @@ Versioning: first byte major, second byte minor:
 def _create_header():
     major_version = 0           # max 255
     minor_version = 1           # max 255
-    return b'CERT' + bytes([major_version, minor_version])
+    return b'CRED' + bytes([major_version, minor_version])
 
 
 '''
