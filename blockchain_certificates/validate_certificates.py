@@ -63,7 +63,7 @@ def load_config():
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
-    p.add_argument('-p', '--hash_prefix', type=str, help='prepend the hash that we wish to issue with this hexadecimal')
+    p.add_argument('-p', '--hash_prefix', type=str, default='20202020202020', help='prepend the hash that we wish to issue with this hexadecimal')
     p.add_argument('-f', nargs='+', help='a list of certificate pdf files to validate')
     args, _ = p.parse_known_args()
     return args

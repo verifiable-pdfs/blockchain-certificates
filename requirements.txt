@@ -2,5 +2,5 @@ configargparse>=0.11.0
 fpdf>=1.7.2
 python-bitcoinlib>=0.7.0
 pdfrw
-blockchain-proofs==0.1.3
+blockchain-proofs==0.2.0
 

@@ -8,6 +8,7 @@ import os
 import sys
 import hashlib
 import getpass
+import binascii
 import configargparse
 
 import bitcoin
@@ -48,9 +49,13 @@ def issue_hash(conf, with_metadata, merkle_root):
 
 
     if(conf.hash_prefix):
-        blockchain_hash = conf.hash_prefix + hash_hex
+        # hash_prefix should be fixed to 7 bytes (14 hex chars)
+        fixed_7_char_hex_prefix = binascii.hexlify(_str_to_7_chars(binascii.unhexlify(conf.hash_prefix)))
+        blockchain_hash = fixed_7_char_hex_prefix + hash_hex
     else:
-        blockchain_hash = hash_hex
+        # hash_prefix should be fixed to 7 bytes (14 hex chars)
+        # if empty add 7 spaces
+        blockchain_hash = '20202020202020' + hash_hex
 
     # initialize full node connection
     if(conf.testnet):
@@ -107,6 +112,19 @@ def issue_hash(conf, with_metadata, merkle_root):
 
     tx_id = b2lx(proxy.sendrawtransaction(signed_tx))
     return tx_id
+
+
+'''
+Input string is returned as a 7 char string (padding with space if less than 7)
+'''
+def _str_to_7_chars(string):
+    length = len(string)
+    if length < 7:
+        return string.ljust(7)
+    elif length > 7:
+        return string[:7]
+    else:
+        return string
 
 
 '''
