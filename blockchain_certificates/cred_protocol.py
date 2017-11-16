@@ -33,11 +33,11 @@ def revoke_batch_cmd(txid):
 '''
 Creates CRED protocol's revoke certificates command
 '''
-def revoke_certs_cmd(txid, cert_hash1, cert_hash2):
+def revoke_certs_cmd(txid, cred_hash1, cred_hash2):
     string = _create_header() + operators['op_revoke_certs']
-    hashed_cert_hash1 = hashlib.sha256(cert_hash1)
-    hashed_cert_hash2 = hashlib.sha256(cert_hash2)
-    return text_to_hex(string) + txid + hashed_cert_hash1 + hashed_cert_hash2
+    hashed_cred_hash1 = hashlib.sha256(cred_hash1)
+    hashed_cred_hash2 = hashlib.sha256(cred_hash2)
+    return text_to_hex(string) + txid + hashed_cred_hash1 + hashed_cred_hash2
 
 
 '''

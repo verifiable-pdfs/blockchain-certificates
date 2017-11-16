@@ -10,7 +10,7 @@ from pdfrw import PdfReader, PdfWriter, PdfDict
 from blockchain_proofs import ChainPointV2
 from blockchain_certificates import pdf_utils
 from blockchain_certificates import publish_hash
-from blockchain_certificates import cert_protocol
+from blockchain_certificates import cred_protocol
 
 
 '''

@@ -64,7 +64,7 @@ The script will confirm the arguments passed and then it will create all the cer
 
 
 ### Usage: `validate-certificates`
-This script can be used to validate certificates issued in the past or issued by others. You pass the certificates that you want to validate as arguments as well as the `hash_prefix` (if added when issuing) and whether it was issued on mainnet or testnet.
+This script can be used to validate certificates issued in the past or issued by others. You pass the certificates that you want to validate as arguments and whether it was issued on mainnet or testnet.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
@@ -93,7 +93,7 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 |full_node_rpc_user|The name of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `create-certificates` script. Example: `kostasnode`|
 |testnet|Specifies whether it will use testnet of mainnet to issue the hash. Example: `true`|
 |tx_fee_per_byte|Specifies the mining fee to use per byte of the transaction's size. Consult https://bitcoinfees.21.co or another site for possible values. Example value on Jan 2017 is: `100`|
-|hash_prefix|It is possible to prepend the index document's hash with a value to differentiate this OP_RETURN transaction from others. You should provide directly the hex value here using any online conversion tool to convert to hex. It is optional and you can comment it out for no prefix. Example value for prepending the string "ULand " is: `554c616e6420`.
+|issuer_identifier|It is possible to specify a value (max 8 bytes/chars) that is added in the OP_RETURN transaction to differentiate the issuer. It is optional. Example value: "UNicDC ".
 
 ## Example project to experiment
 The `sample_create_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates and the index file. Just delete the `certificates` directory and run the process again to create them. Note that the sample `config.ini` needs to be updated with the path that the `sample_create_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.

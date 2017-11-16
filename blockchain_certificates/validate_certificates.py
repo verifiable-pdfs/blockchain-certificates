@@ -8,7 +8,7 @@ import shutil
 import hashlib
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
-from blockchain_certificates import cert_protocol
+from blockchain_certificates import cred_protocol
 from blockchain_proofs import ChainPointV2
 
 '''

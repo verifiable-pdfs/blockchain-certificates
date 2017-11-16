@@ -1,0 +1,3 @@
+- cleanup: update cert variables to cred
+- fault-tolerance: use 1 of N+ services to acquire OP_RETURN
+
