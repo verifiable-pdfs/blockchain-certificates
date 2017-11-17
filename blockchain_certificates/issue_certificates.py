@@ -83,7 +83,7 @@ def main():
     cp = prepare_chainpoint_tree(cert_hashes)
 
     # create OP_RETURN in hex
-    op_return_hex = cert_protocol.issue_cmd(conf.issuer_identifier,
+    op_return_hex = cred_protocol.issue_cmd(conf.issuer_identifier,
                                             cp.get_merkle_root())
     txid = publish_hash.issue_op_return(conf, op_return_hex)
     insert_proof_to_certificates(conf, cp, txid, cert_files)

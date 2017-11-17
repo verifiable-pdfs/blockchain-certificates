@@ -1,3 +1,7 @@
 - cleanup: update cert variables to cred
+  . and also rename the repository to blockchain-credentials
+  . note that metadata for certificates different from metadata for driving licenses!!
+    . which affects the validator GUI
+    . a global repository of metadata templates might resolve this!
 - fault-tolerance: use 1 of N+ services to acquire OP_RETURN
 

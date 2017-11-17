@@ -18,7 +18,7 @@ operators = {
 Creates CRED protocol's issue certificates command
 '''
 def issue_cmd(issuer_identifier, merkle_root):
-    bstring = _create_header() + operators['op_issue'] + _str_to_8_chars(issuer_identifier).encode('utf-8') + merkle_root.encode('utf-8')
+    bstring = _create_header() + operators['op_issue'] + _str_to_8_chars(issuer_identifier).encode('utf-8') + binascii.unhexlify(merkle_root)
     return bstring
 
 

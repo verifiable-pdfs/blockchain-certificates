@@ -8,6 +8,7 @@ import os
 import sys
 import hashlib
 import getpass
+import binascii
 import configargparse
 
 import bitcoin
@@ -28,7 +29,7 @@ def issue_op_return(conf, op_return_bstring):
     print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
     print('testnet:\t\t{}'.format(conf.testnet))
     print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
-    print('Hex bytes for OP_RETURN:\n{}'.format(op_return_hex_string))
+    print('Hex bytes for OP_RETURN:\n{}'.format(op_return_bstring))
 
     op_return_cert_protocol = op_return_bstring
 
@@ -38,6 +39,7 @@ def issue_op_return(conf, op_return_bstring):
 
     full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
+    # initialize full node connection
     if(conf.testnet):
         bitcoin.SelectParams('testnet')
     else:
@@ -92,6 +94,19 @@ def issue_op_return(conf, op_return_bstring):
 
     tx_id = b2lx(proxy.sendrawtransaction(signed_tx))
     return tx_id
+
+
+'''
+Input string is returned as a 7 char string (padding with space if less than 7)
+'''
+def _str_to_7_chars(string):
+    length = len(string)
+    if length < 7:
+        return string.ljust(7)
+    elif length > 7:
+        return string[:7]
+    else:
+        return string
 
 
 '''
