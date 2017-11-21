@@ -50,7 +50,7 @@ def issue_hash(conf, with_metadata, merkle_root):
 
     if(conf.hash_prefix):
         # hash_prefix should be fixed to 7 bytes (14 hex chars)
-        fixed_7_char_hex_prefix = binascii.hexlify(_str_to_7_chars(binascii.unhexlify(conf.hash_prefix)))
+        fixed_7_char_hex_prefix = binascii.hexlify(_str_to_7_chars(binascii.unhexlify(conf.hash_prefix))).decode('utf-8')
         blockchain_hash = fixed_7_char_hex_prefix + hash_hex
     else:
         # hash_prefix should be fixed to 7 bytes (14 hex chars)

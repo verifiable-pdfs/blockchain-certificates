@@ -1,11 +1,3 @@
-student_name,email,percentage_grade,degree_title
-Tom Heston,usmolecular@gmail.com,98.3/100,Introduction to Digital Currencies
-Bradley Holaway,brad@wearecopperstate.com,98.2/100,Introduction to Digital Currencies
-John Otwell,jbotwell@gmail.com,98/100,Introduction to Digital Currencies
-Marcin Zduniak,marcin@colubris.pro,98/100,Introduction to Digital Currencies
-Barry Kilborn,barrykilborn@hotmail.com,97.7/100,Introduction to Digital Currencies
-Wilfried Zeise,wilfried.zeise@freenet.de,97.7/100,Introduction to Digital Currencies
-Mary Heston,megasimple@gmail.com,97.3/100,Introduction to Digital Currencies
-Velvet Campbell,vcampbell@earthlink.net,97.3/100,Introduction to Digital Currencies
-Stanley Joseph,Stanley.Joseph@centrica.com,97.2/100,Introduction to Digital Currencies
-Kelly Leonard,kellypleonard@outlook.com,96.7/100,Introduction to Digital Currencies
+name,email,grade,degree_title
+Kostas Karasavvas,fake1@gmail.com,98.3/100,Introduction to Digital Currencies
+Andreas Vlachos,fake2@gmail.com,98.2/100,Introduction to Digital Currencies
