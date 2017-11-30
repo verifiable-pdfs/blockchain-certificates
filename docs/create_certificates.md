@@ -22,7 +22,7 @@ Activate new environment
 
 Get the code from github and go to that directory (a package python might be created in the future)
 
-`$ git clone https//github.com/UniversityOfNicosia/blockchain-certificates.git && cd blockchain-certificates`
+`$ git clone https://github.com/UniversityOfNicosia/blockchain-certificates.git && cd blockchain-certificates`
 
 Run setup to install
 
