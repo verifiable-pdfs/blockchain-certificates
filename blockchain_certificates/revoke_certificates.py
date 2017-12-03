@@ -98,7 +98,7 @@ def revoke_certificates(conf):
 Revoke a whole certificate batch given a the issuance txid
 '''
 def revoke_batch(conf):
-    txid = conf.b
+    txid = conf.batch
     op_return_bstring = cred_protocol.revoke_batch_cmd(txid)
     revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
     print('\nTx hash: {}'.format(revoked_txid))
