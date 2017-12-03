@@ -1,7 +1,15 @@
-- cleanup: update cert variables to cred
-  . and also rename the repository to blockchain-credentials
+Technical
+- cleanup: update cert variables to cred (much later)
+  . and also rename the repository to blockchain-credentials (much later)
   . note that metadata for certificates different from metadata for driving licenses!!
     . which affects the validator GUI
     . a global repository of metadata templates might resolve this!
-- fault-tolerance: use 1 of N+ services to acquire OP_RETURN
+- fault-tolerance: use 1 of N+ services to acquire OP_RETURN (asap)
+- add logging throughout!
+- add testing (unit/system), e.g. with old certificates and past entries
+  . certs need to be fake though!!
+- support regtest..?
 
+Functionality
+- impl. revoke address
+- impl. issue certs with expiry date

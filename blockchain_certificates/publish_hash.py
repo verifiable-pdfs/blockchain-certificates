@@ -11,8 +11,8 @@ import getpass
 import binascii
 import configargparse
 
-import bitcoin
-import bitcoin.rpc
+from bitcoin import SelectParams
+from bitcoin.rpc import Proxy
 from bitcoin.core import *
 from bitcoin.core.script import *
 from bitcoin.wallet import *
@@ -29,7 +29,8 @@ def issue_op_return(conf, op_return_bstring):
     print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
     print('testnet:\t\t{}'.format(conf.testnet))
     print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
-    print('Hex bytes for OP_RETURN:\n{}'.format(op_return_bstring))
+    print('Bytes for OP_RETURN:\n{}'.format(op_return_bstring))
+    print('Hex for OP_RETURN:\n{}'.format(binascii.hexlify(op_return_bstring)))
 
     op_return_cert_protocol = op_return_bstring
 
@@ -41,13 +42,13 @@ def issue_op_return(conf, op_return_bstring):
 
     # initialize full node connection
     if(conf.testnet):
-        bitcoin.SelectParams('testnet')
+        SelectParams('testnet')
     else:
-        bitcoin.SelectParams('mainnet')
+        SelectParams('mainnet')
 
-    proxy = bitcoin.rpc.Proxy("http://{0}:{1}@{2}".format(conf.full_node_rpc_user,
-                                                          full_node_rpc_password,
-                                                          conf.full_node_url))
+    proxy = Proxy("http://{0}:{1}@{2}".format(conf.full_node_rpc_user,
+                                              full_node_rpc_password,
+                                              conf.full_node_url))
 
     # create transaction
     tx_outputs = []

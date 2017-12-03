@@ -1,6 +1,5 @@
-configargparse>=0.11.0
-fpdf>=1.7.2
-python-bitcoinlib==0.7.0
 pdfrw==0.3
+fpdf==1.7.2
+configargparse==0.11.0
+python-bitcoinlib==0.7.0
 blockchain-proofs==0.2.1
-

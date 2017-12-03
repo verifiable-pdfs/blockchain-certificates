@@ -73,6 +73,10 @@ def main():
         sys.exit(1)
 
     conf = load_config()
+
+    # check if issuance address has not been revoked!
+    # TODO: REVOKE ADDRESS CMD
+
     pdf_utils.populate_pdf_certificates(conf)
 
     # get certificate file list here (to ensure it is identical to both

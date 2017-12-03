@@ -72,6 +72,10 @@ def main():
         sys.exit(1)
 
     conf = load_config()
+
+    # check if issuance address has not been revoked!
+    # TODO: REVOKE ADDRESS CMD
+
     pdf_utils.add_metadata_only_to_pdf_certificates(conf)
 
     # get certificate file list here (to ensure it is identical to both
@@ -82,10 +86,10 @@ def main():
     cert_hashes = pdf_utils.hash_certificates(cert_files)
     cp = prepare_chainpoint_tree(cert_hashes)
 
-    # create OP_RETURN in hex
-    op_return_hex = cred_protocol.issue_cmd(conf.issuer_identifier,
-                                            cp.get_merkle_root())
-    txid = publish_hash.issue_op_return(conf, op_return_hex)
+    # create OP_RETURN in bytes
+    op_return_bstring = cred_protocol.issue_cmd(conf.issuer_identifier,
+                                                cp.get_merkle_root())
+    txid = publish_hash.issue_op_return(conf, op_return_bstring)
     insert_proof_to_certificates(conf, cp, txid, cert_files)
     print('\nTx hash: {}'.format(txid))
 

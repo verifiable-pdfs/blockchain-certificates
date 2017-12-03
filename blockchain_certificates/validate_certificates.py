@@ -9,6 +9,8 @@ import hashlib
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
 from blockchain_certificates import cred_protocol
+from blockchain_certificates import network_utils
+from blockchain_certificates import utils
 from blockchain_proofs import ChainPointV2
 
 '''
@@ -57,7 +59,40 @@ def validate_certificate(cert, issuer_identifier, testnet):
 
     # blockchain receipt is valid but we need to also check if the certificate
     # was revoked after issuing
-    # ...TODO
+    txid = proof['anchors'][0]['sourceId']
+    data_before_issuance, data_after_issuance = network_utils.get_all_op_return_hexes(txid, testnet)
+
+    # check if cert or batch was revoked from oldest to newest; if a valid
+    # revoke address is found further commands are ignored 
+    # (TODO: REVOKE ADDRESS CMD
+    for op_return in reversed(data_after_issuance):
+        cred_dict = cred_protocol.parse_op_return_hex(op_return)
+        if cred_dict:
+            if cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_batch'):
+                if txid == cred_dict['data']['txid']:
+                    return False   # log: cert invalid - batch was revoked
+            elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_creds'):
+                if txid == cred_dict['data']['txid']:
+                    # compare the certificate hash bytes
+                    filehash_bytes = utils.hex_to_bytes(filehash)
+                    ripemd_filehash = utils.ripemd160(filehash_bytes)
+                    ripemd_hex = utils.bytes_to_hex(ripemd_filehash)
+                    if ripemd_hex == cred_dict['data']['hashes'][0]:
+                        return False     # log: cert invalid - cert was revoked
+
+                    if len(cred_dict['data']['hashes']) > 1:
+                        if ripemd_hex == cred_dict['data']['hashes'][1]:
+                            return False # log: cert invalid - cert was revoked
+            elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
+                # if correct address and valid revoke then stop checking other
+                # revokes and break loop (TODO: REVOKE ADDRESS CMD)
+                print("TODO: revoke address not implemented yet!")
+
+
+    # check if cert's issuance is after a revoke address cmd on that address
+    # TODO: REVOKE ADDRESS CMD
+    # check the data_before_issuance...  and return False!!
+
     return True
 
 
