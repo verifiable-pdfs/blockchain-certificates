@@ -30,7 +30,7 @@ Run setup to install
 
 
 ## Scripts and Usage
-The script that will be made available is `create-certificates`. Optionally `validate_certificates` can be used after issuing to validate the certificates. Both take several command-line options and option `-h` provides help. However, we do strongly recommend to use a config file to configure the scripts. Both scripts use the same configuration file since they share options. You can then, if needed, use some of the command-line options to override options from the configuration file.
+The script that will be made available is `create-certificates`. Optionally `validate-certificates` can be used after issuing to validate the certificates and `revoke-certificates` to revoke previously issued certificates. All take several command-line options and option `-h` provides help. However, we do strongly recommend to use a config file to configure the scripts. Both scripts use the same configuration file since they share options. You can then, if needed, use some of the command-line options to override options from the configuration file.
 
 In addition to setting up the configuration file (consult the following section) one needs to provide:
 
@@ -72,6 +72,16 @@ Given the example directory structure from above and a proper config.ini file it
 $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cert2.pdf cert3.pdf
 ```
 
+### Usage: `revoke-certificates`
+This script can be used to revoke certificates issued in the past. You can revoke either a complete batch of certificates by passing the transaction id of the issuance or you can revoke individual certificates by passing the PDF certificates themselves.
+
+Given the example directory structure from above and a proper config.ini file it is as simple as:
+
+```
+$ validate-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2.pdf 
+```
+
+
 ## Configuration Options (config.ini)
 
 |Option|Explanation and example|
@@ -87,6 +97,12 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 |**CSV file related**||
 |cert_names_csv_column|Specifies the header of the column to use to name the certificates filenames. It has to be unique for each row or else the latter certificates will overrite the former! A good approach is to use a graduate identifier or their name. Given that `graduates_csv_file` contains a column with header `name` with all the (unique) names of the graduates an example value would be: `name`|
 |cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata_object` for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata.|
+|**Validation related**||
+|f|Specify the PDF certificates to be validated.|
+|**Revocation related**|Mutually exclusive options|
+|p|Specify the PDF certificates that we need to revoke.|
+|batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|
+|address|Specify the address which will be revoked/invalidated. Not implemented yet.|
 |**Blockchain related**|*Note: currently only Bitcoin's blockchain is supported.*|
 |issuing_address|The Bitcoin (testnet or mainnet) address to use for creating the OP_RETURN transaction that will issue the index document's hash in the blockchain. It has to have sufficient funds to cover just the fees of the transaction. If more funds are present we send them back as change to the same address. Make sure that you have the private key for this address safe since that might be the only formal way of proving who issued the certificates. Example for testnet: `mgs9DLttzvWFkZ46YLSNKSZbgSNiMNUsdJ`|
 |full_node_url|The URL of the full node together with the port. Example for testnet: `127.0.0.1:18332`
