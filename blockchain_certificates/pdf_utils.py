@@ -58,7 +58,7 @@ def add_metadata_only_to_pdf_certificates(conf):
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
                                conf.cert_metadata_columns, cert_data)
         else:
-            print('\nSkipping {}\n'.format(filename))
+            print('\nSkipping {}\n'.format(certificate_file))
 
 
 

@@ -9,7 +9,12 @@ Technical
 - add testing (unit/system), e.g. with old certificates and past entries
   . certs need to be fake though!!
 - support regtest..?
+- push for PDF standard on validating from viewer!!!
+- idea: adding url/qrcode on metadata for extra identification!?
 
 Functionality
 - impl. revoke address
 - impl. issue certs with expiry date
+- Decentralized Identity
+  . phase 1: link distributed sources of identity (automatic)
+  . phase 2: proper decentralized identity management (blockchain specific)

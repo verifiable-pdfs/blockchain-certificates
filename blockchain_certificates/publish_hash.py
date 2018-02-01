@@ -97,18 +97,6 @@ def issue_op_return(conf, op_return_bstring):
     return tx_id
 
 
-'''
-Input string is returned as a 7 char string (padding with space if less than 7)
-'''
-def _str_to_7_chars(string):
-    length = len(string)
-    if length < 7:
-        return string.ljust(7)
-    elif length > 7:
-        return string[:7]
-    else:
-        return string
-
 
 '''
 Loads and returns the configuration options (either from --config or from
