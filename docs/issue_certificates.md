@@ -76,7 +76,7 @@ This script can be used to revoke certificates issued in the past. You can revok
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
 ```
-$ validate-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2.pdf 
+$ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2.pdf 
 ```
 
 
