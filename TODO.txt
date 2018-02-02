@@ -5,6 +5,7 @@ Technical
     . which affects the validator GUI
     . a global repository of metadata templates might resolve this!
 - fault-tolerance: use 1 of N+ services to acquire OP_RETURN (asap)
+- add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
 - add testing (unit/system), e.g. with old certificates and past entries
   . certs need to be fake though!!
