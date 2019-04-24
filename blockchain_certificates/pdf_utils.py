@@ -16,31 +16,40 @@ Adds metadata only with values from a CSV file to ready-made PDF certificates.
 Expects certificates_directory with all the PDF certificates. The names of the
 certificates must begin with the column chosen in cert_names_csv_column.
 '''
-def add_metadata_only_to_pdf_certificates(conf):
+def add_metadata_only_to_pdf_certificates(conf, interactive=False):
     graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
-    print('\nConfigured values are:\n')
-    print('working_directory:\t{}'.format(conf.working_directory))
-    print('graduates_csv_file:\t{}'.format(graduates_csv_file))
-    print('certificates_directory:\t{}'.format(certificates_directory))
-    print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
-    print('issuer:\t\t\t{}'.format(conf.issuer))
-    print('issuer_address:\t\t{}'.format(conf.issuing_address))
-    print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
-    consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
-    if not consent:
-        sys.exit()
+    if interactive:
+        print('\nConfigured values are:\n')
+        print('working_directory:\t{}'.format(conf.working_directory))
+        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('certificates_directory:\t{}'.format(certificates_directory))
+        print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
+        print('issuer:\t\t\t{}'.format(conf.issuer))
+        print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
+        if not consent:
+            sys.exit()
 
     # check if certificates directory exists and exit if not
     if(not os.path.isdir(certificates_directory)):
-        print('Directory {} does not exist.  Exiting.'.format(certificates_directory))
-        sys.exit()
+        if interactive:
+            print('Directory {} does not exist.  Exiting.'.format(certificates_directory))
+            sys.exit()
+        else:
+            error_str = "directory {} does not exist".format(certificates_directory)
+            raise ValueError(error_str)
 
     # get a list of all PDF files and exit if none
     cert_files = glob.glob(certificates_directory + os.path.sep + "*.[pP][dD][fF]")
     if not cert_files:
-        print('Directory {} is empty. Exiting.'.format(certificates_directory))
-        sys.exit()
+        if interactive:
+            print('Directory {} is empty. Exiting.'.format(certificates_directory))
+            sys.exit()
+        else:
+            error_str = "directory {} is empty".format(certificates_directory)
+            raise ValueError(error_str)
 
     data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
     for cert_data in data:
@@ -56,9 +65,16 @@ def add_metadata_only_to_pdf_certificates(conf):
 
         if certificate_file:
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
-                               conf.cert_metadata_columns, cert_data)
+                               conf.cert_metadata_columns, cert_data,
+                               interactive)
         else:
-            print('\nSkipping {}\n'.format(certificate_file))
+            if interactive:
+                print('\nSkipping {}\n'.format(certificate_file))
+            else:
+                # note that in non-interactive if a file is not found we fail
+                # completely the issuance
+                error_str = "skipping {}".format(certificates_directory)
+                raise ValueError(error_str)
 
 
 
@@ -67,22 +83,23 @@ Populates a pdf form template with values from a CSV file to generate the pdf
 certificates. Also uses the CSV data to add metadata in the pdf file before 
 hashing.
 '''
-def populate_pdf_certificates(conf):
+def populate_pdf_certificates(conf, interactive=False):
     pdf_cert_template_file = os.path.join(conf.working_directory, conf.pdf_cert_template_file)
     graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
-    print('\nConfigured values are:\n')
-    print('working_directory:\t{}'.format(conf.working_directory))
-    print('pdf_cert_template_file:\t{}'.format(pdf_cert_template_file))
-    print('graduates_csv_file:\t{}'.format(graduates_csv_file))
-    print('certificates_directory:\t{}'.format(certificates_directory))
-    print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
-    print('issuer:\t\t\t{}'.format(conf.issuer))
-    print('issuer_address:\t\t{}'.format(conf.issuing_address))
-    print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
-    consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
-    if not consent:
-        sys.exit()
+    if interactive:
+        print('\nConfigured values are:\n')
+        print('working_directory:\t{}'.format(conf.working_directory))
+        print('pdf_cert_template_file:\t{}'.format(pdf_cert_template_file))
+        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('certificates_directory:\t{}'.format(certificates_directory))
+        print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
+        print('issuer:\t\t\t{}'.format(conf.issuer))
+        print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
+        if not consent:
+            sys.exit()
 
     # create certs_dir if it does not exist
     os.makedirs(certificates_directory, exist_ok=True)
@@ -96,7 +113,7 @@ def populate_pdf_certificates(conf):
         _fill_pdf_form(cert_data, pdf_cert_template_file, out_file)
 
         _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
-                           conf.cert_metadata_columns, cert_data)
+                           conf.cert_metadata_columns, cert_data, interactive)
 
 
 def _process_csv(csv_file, global_fields_str):
@@ -144,7 +161,8 @@ are added as metadata to the JSON metadata_object. It then adds the
 required 'issuer' and 'issuer_address' as well as an empty
 chainpoint_proof key.
 '''
-def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
+def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data,
+                       interactive=False):
     # create metadata objest (json)
     metadata_object = {}
     metadata_fields = columns.split(",")
@@ -155,8 +173,8 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
     # issuer and issuer_address used to go as separate metadata fields
     # but now go to the metadata_object. They are still compulsory!
     # The validator that reads metadata requires to look for issuer and
-    # issuer_address both in the metadata_object and if not fount it has
-    # to look for them as separate metadata fields for backwards 
+    # issuer_address both in the metadata_object and if not found it has
+    # to look for them as separate metadata fields for backwards
     # compatibility (certificates issued with v0.9.3 and before)
     metadata_object['issuer'] = issuer
     metadata_object['issuer_address'] = issuer_address
@@ -168,8 +186,9 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data):
     pdf.Info.update(metadata)
     PdfWriter().write(out_file, pdf)
 
-    # print progress
-    print('.', end="", flush=True)
+    if interactive:
+        # print progress
+        print('.', end="", flush=True)
 
 
 

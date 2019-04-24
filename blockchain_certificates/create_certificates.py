@@ -16,22 +16,26 @@ from blockchain_certificates import cred_protocol
 '''
 Inserts the ChainPointV2 proof as pdf metadata for each certificate. Metadata
 key is "chainpoint_proof"
+TODO: duplicate with issue_certificates
 '''
-def insert_proof_to_certificates(conf, cp, txid, cert_files):
-    print('')
+def insert_proof_to_certificates(conf, cp, txid, cert_files, interactive=False):
+    if interactive:
+        print('')
     for ind, val in enumerate(cert_files):
         proof = json.dumps( cp.get_receipt(ind, txid) )
         metadata = PdfDict(chainpoint_proof=proof)
         pdf = PdfReader(val)
         pdf.Info.update(metadata)
         PdfWriter().write(val, pdf)
-        # print progress
-        print('.', end="", flush=True)
+        if interactive:
+            # print progress
+            print('.', end="", flush=True)
 
 
 '''
 Creates a new ChainPointV2 object initializes with the certificates passed and
 creates the corresponding merkle tree
+TODO: duplicate with issue_certificates
 '''
 def prepare_chainpoint_tree(hashes):
     cp = ChainPointV2()
@@ -67,13 +71,7 @@ def load_config():
     return args
 
 
-def main():
-    if sys.version_info.major < 3:
-        sys.stderr.write('Python 3 is required!')
-        sys.exit(1)
-
-    conf = load_config()
-
+def create_certificates(conf, interactive=False):
     # check if issuance address has not been revoked!
     # TODO: REVOKE ADDRESS CMD
 
@@ -91,7 +89,18 @@ def main():
     op_return_hex = cred_protocol.issue_cmd(conf.issuer_identifier,
                                             cp.get_merkle_root())
     txid = publish_hash.issue_op_return(conf, op_return_hex)
-    insert_proof_to_certificates(conf, cp, txid, cert_files)
+    insert_proof_to_certificates(conf, cp, txid, cert_files, interactive)
+
+    return txid
+
+
+def main():
+    if sys.version_info.major < 3:
+        sys.stderr.write('Python 3 is required!')
+        sys.exit(1)
+
+    conf = load_config()
+    txid = create_certificates(conf, True)
     print('\nTx hash: {}'.format(txid))
 
 

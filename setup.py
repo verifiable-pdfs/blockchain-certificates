@@ -1,10 +1,5 @@
 from setuptools import setup
-from pip.req import parse_requirements
 from blockchain_certificates import __version__
-
-
-install_reqs = parse_requirements('requirements.txt', session=False)
-requirements = [str(ir.req) for ir in install_reqs]
 
 with open('README.rst') as readme:
     long_description = readme.read()
@@ -18,7 +13,13 @@ setup(name='blockchain-certificates',
       url='https://github.com/UniversityOfNicosia/blockchain-certificates',
       license='AGPLv3',
       packages=['blockchain_certificates'],
-      install_requires=requirements,
+      install_requires=[
+          "pdfrw==0.3",
+          "fpdf==1.7.2",
+          "configargparse==0.11.0",
+          "bitcoin-utils==0.3.2",
+          "blockchain-proofs==0.2.1"
+      ],
       package_data={
           'blockchain_certificates': ['requirements.txt',
                                       'java/itextpdf-5.5.10.jar',

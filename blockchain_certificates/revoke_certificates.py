@@ -57,7 +57,7 @@ def remove_chainpoint_proof_and_hash(pdf_file):
 '''
 Revoke certificates given a list of valid certificates.
 '''
-def revoke_certificates(conf):
+def revoke_certificates(conf, interactive=False):
     certificates = conf.p
     # for all certificates remove chainpoint receipt and get original hash
     txid_to_revoke = None
@@ -67,12 +67,21 @@ def revoke_certificates(conf):
         if not txid_to_revoke:
             txid_to_revoke = txid
         elif txid_to_revoke != txid:
-            sys.exit("Certificates to revoke are not all part of the same transaction!")
+            if interactive:
+                sys.exit("Certificates to revoke are not all part of the same transaction!")
+            else:
+                raise TypeError("Certificates to revoke are not all part of the same transaction!")
 
         if pdf_hash:
             hashes_to_revoke.append(pdf_hash)
         else:
-            print('Certificate {} is invalid! -- Skipping!'.format(cert))
+            if interactive:
+                print('Certificate {} is invalid (possible tampered)! -- Skipping!'.format(cert))
+            else:
+                # note that if the hash is different from original after
+                # removing the chainpoint_proof then fail completely in
+                # non-interactive mode
+                raise RuntimeError('Certificate {} is invalid (possible tampered)! -- Skipping!'.format(cert))
 
     # get last certificate if number of certificates is even
     final_odd_hash_to_revoke = None
@@ -80,28 +89,42 @@ def revoke_certificates(conf):
         final_odd_hash_to_revoke = hashes_to_revoke[-1]
 
     # iterate every two certificates
+    revoke_tx_hashes = []
     for hash1, hash2 in zip(hashes_to_revoke[0::2], hashes_to_revoke[1::2]):
         op_return_bstring = cred_protocol.revoke_creds_cmd(txid, hash1, hash2)
         revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
-        print('\nTx hash: {}'.format(revoked_txid))
-        input('Take a note of the revoke txid and press ENTER to continue...')
+        if interactive:
+            print('\nTx hash: {}'.format(revoked_txid))
+            input('Take a note of the revoke txid and press ENTER to continue...')
+        else:
+            revoke_tx_hashes.append( { "txid": revoked_txid } )
 
     if final_odd_hash_to_revoke:
         # issue a final revoke cmd with the last certificate hash
         op_return_bstring = cred_protocol.revoke_creds_cmd(txid, final_odd_hash_to_revoke)
-        revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
-        print('\nTx hash: {}'.format(revoked_txid))
-        input('Take a note of the revoke txid and press ENTER to continue...')
+        revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring,
+                                                    interactive)
+        if interactive:
+            print('\nTx hash: {}'.format(revoked_txid))
+            input('Take a note of the revoke txid and press ENTER to continue...')
+        else:
+            revoke_tx_hashes.append( { "txid": revoked_txid } )
+
+    if not interactive:
+        return { "results": revoke_tx_hashes }
 
 
 '''
 Revoke a whole certificate batch given a the issuance txid
 '''
-def revoke_batch(conf):
+def revoke_batch(conf, interactive=False):
     txid = conf.batch
     op_return_bstring = cred_protocol.revoke_batch_cmd(txid)
     revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
-    print('\nTx hash: {}'.format(revoked_txid))
+    if interactive:
+        print('\nTx hash: {}'.format(revoked_txid))
+    else:
+        return revoked_txid
 
 
 '''
@@ -133,23 +156,32 @@ def load_config():
     return args
 
 
+def revoke(conf, interactive=False):
+    # check if issuance address has not been revoked!
+    # TODO: REVOKE ADDRESS CMD
+
+    # check type of revocation and act accordingly
+    if(conf.address):
+        if interactive:
+            print("Address revocation is not implemented yet!")
+        else:
+            raise NotImplementedError("Address revocation is not implemented yet!")
+    elif(conf.batch):
+        txid = revoke_batch(conf, interactive)
+        return txid
+    elif(conf.p):
+        txids = revoke_certificates(conf, interactive)
+        return txids
+
+
+
 def main():
     if sys.version_info.major < 3:
         sys.stderr.write('Python 3 is required!')
         sys.exit(1)
 
     conf = load_config()
-
-    # check if issuance address has not been revoked!
-    # TODO: REVOKE ADDRESS CMD
-
-    # check type of revocation and act accordingly
-    if(conf.address):
-        print("Address revocation is not implemented yet!")
-    elif(conf.batch):
-        revoke_batch(conf)
-    elif(conf.p):
-        revoke_certificates(conf)
+    revoke(conf, True)
 
 
 if __name__ == "__main__":

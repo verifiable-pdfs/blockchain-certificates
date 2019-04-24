@@ -3,19 +3,23 @@ Technical
   . and also rename the repository to blockchain-credentials (much later)
   . note that metadata for certificates different from metadata for driving licenses!!
     . which affects the validator GUI
-    . a global repository of metadata templates might resolve this!
+    . a global repository of metadata templates/schemas might resolve this!
+- implement as a library
+  . raise exception instead of stoping execution (done)
+  . add appropriate exceptions!
 - fault-tolerance: use 1 of N+ services to acquire OP_RETURN (asap)
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
 - add testing (unit/system), e.g. with old certificates and past entries
-  . certs need to be fake though!!
-- support regtest..?
-- push for PDF standard on validating from viewer!!!
+  . certs need to be fake though
+- support regtest?
+- PDF plugin for validating from viewer
 - idea: adding url/qrcode on metadata for extra identification!?
 
 Functionality
-- impl. revoke address
 - impl. issue certs with expiry date
+- impl. revoke address
 - Decentralized Identity
   . phase 1: link distributed sources of identity (automatic)
   . phase 2: proper decentralized identity management (blockchain specific)
+

@@ -11,89 +11,111 @@ import getpass
 import binascii
 import configargparse
 
-from bitcoin import SelectParams
-from bitcoin.rpc import Proxy
-from bitcoin.core import *
-from bitcoin.core.script import *
-from bitcoin.wallet import *
+from bitcoinutils.setup import setup
+from bitcoinutils.proxy import NodeProxy
+from bitcoinutils.transactions import Transaction, TxInput, TxOutput
+from bitcoinutils.keys import P2pkhAddress
+from bitcoinutils.script import Script
 
 
 '''
 Issues bytes to the Bitcoin's blockchain using OP_RETURN.
 '''
-def issue_op_return(conf, op_return_bstring):
-    print('\nConfigured values are:\n')
-    print('working_directory:\t{}'.format(conf.working_directory))
-    print('issuing_address:\t{}'.format(conf.issuing_address))
-    print('full_node_url:\t\t{}'.format(conf.full_node_url))
-    print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
-    print('testnet:\t\t{}'.format(conf.testnet))
-    print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
-    print('Bytes for OP_RETURN:\n{}'.format(op_return_bstring))
-    print('Hex for OP_RETURN:\n{}'.format(binascii.hexlify(op_return_bstring)))
+def issue_op_return(conf, op_return_bstring, interactive=False):
 
-    op_return_cert_protocol = op_return_bstring
+    op_return_hex = binascii.hexlify(op_return_bstring).decode()
 
-    consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
-    if not consent:
-        sys.exit()
+    if interactive:
+        print('\nConfigured values are:\n')
+        print('working_directory:\t{}'.format(conf.working_directory))
+        print('issuing_address:\t{}'.format(conf.issuing_address))
+        print('full_node_url:\t\t{}'.format(conf.full_node_url))
+        print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
+        print('testnet:\t\t{}'.format(conf.testnet))
+        print('tx_fee_per_byte:\t{}'.format(conf.tx_fee_per_byte))
+        print('Bytes for OP_RETURN:\n{}'.format(op_return_bstring))
+        print('Hex for OP_RETURN:\n{}'.format(op_return_hex))
 
-    full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
+    op_return_cert_protocol = op_return_hex
+
+    if interactive:
+        consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
+        if not consent:
+            sys.exit()
+
+    # test explicitly when non interactive
+    if interactive:
+        conf.full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
     # initialize full node connection
     if(conf.testnet):
-        SelectParams('testnet')
+        setup('testnet')
     else:
-        SelectParams('mainnet')
+        setup('mainnet')
 
-    proxy = Proxy("http://{0}:{1}@{2}".format(conf.full_node_rpc_user,
-                                              full_node_rpc_password,
-                                              conf.full_node_url))
+    host, port = conf.full_node_url.split(':')   # TODO: update when NodeProxy accepts full url!
+    proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
+                      host, port).get_proxy()
 
     # create transaction
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
                      key=lambda x: hash(x['amount']), reverse=True)
 
-    issuing_pubkey = proxy.validateaddress(conf.issuing_address)['pubkey']
+    issuing_pubkey = proxy.getaddressinfo(conf.issuing_address)['pubkey']
 
-    tx_inputs = [ CMutableTxIn(unspent[0]['outpoint']) ]
+    tx_inputs = [ TxInput(unspent[0]['txid'], unspent[0]['vout']) ]
     input_amount = unspent[0]['amount']
 
-    change_script_out = CBitcoinAddress(conf.issuing_address).to_scriptPubKey()
-    change_output = CMutableTxOut(input_amount, change_script_out)
+    change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
+    change_output = TxOutput(input_amount, change_script_out)
 
-    op_return_output = CMutableTxOut(0, CScript([OP_RETURN, op_return_cert_protocol]))
+    op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
     tx_outputs = [ change_output, op_return_output ]
 
-    tx = CMutableTransaction(tx_inputs, tx_outputs)
+    tx = Transaction(tx_inputs, tx_outputs)
 
     # sign transaction to get its size
-    r = proxy.signrawtransaction(tx)
-    assert r['complete']
-    signed_tx = r['tx']
-    signed_tx_size = len(signed_tx.serialize())
+    r = proxy.signrawtransactionwithwallet(tx.serialize())
+    if r['complete'] == None:
+        if interactive:
+            sys.exit("Transaction couldn't be signed by node")
+        else:
+            raise RuntimeError("Transaction couldn't be signed by node")
+
+    signed_tx = r['hex']
+    signed_tx_size = len(signed_tx)
 
     # calculate fees and change
-    tx_fee = signed_tx_size * conf.tx_fee_per_byte
-    change_amount = input_amount - tx_fee
+    tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
+
+    # note results is sometimes in e- notation
+    change_amount = input_amount - (tx_fee / 100000000)
 
     if(change_amount < 0):
-        sys.exit("Specified address cannot cover the transaction fee of: {} satoshis".format(tx_fee))
+        if interactive:
+            sys.exit("Specified address cannot cover the transaction fee of: {} satoshis".format(tx_fee))
+        else:
+            raise RuntimeError("insufficient satoshis, cannot create transaction")
 
     # update tx out for change and re-sign
-    tx.vout[0].nValue = change_amount
-    r = proxy.signrawtransaction(tx)
-    assert r['complete']
-    signed_tx = r['tx']
+    tx.outputs[0].amount = change_amount
+    r = proxy.signrawtransactionwithwallet(tx.serialize())
+    if r['complete'] == None:
+        if interactive:
+            sys.exit("Transaction couldn't be signed by node")
+        else:
+            raise RuntimeError("Transaction couldn't be signed by node")
+    signed_tx = r['hex']
 
     # send transaction
-    print('The fee will be {} satoshis.\n'.format(tx_fee))
-    consent = input('Do you want to issue on the blockchain? [y/N]: ').lower() in ('y', 'yes')
-    if not consent:
-        sys.exit()
+    if interactive:
+        print('The fee will be {} satoshis.\n'.format(tx_fee))
+        consent = input('Do you want to issue on the blockchain? [y/N]: ').lower() in ('y', 'yes')
+        if not consent:
+            sys.exit()
 
-    tx_id = b2lx(proxy.sendrawtransaction(signed_tx))
+    tx_id = proxy.sendrawtransaction(signed_tx)
     return tx_id
 
 
@@ -125,7 +147,7 @@ def main():
     conf = load_config()
 
     # test with metadata and fake root
-    txid = issue_op_return(conf, "3132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930")
+    txid = issue_op_return(conf, "3132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930313233343536373839303132333435363738393031323334353637383930", True)
 
     print('Transaction was sent to the network. The transaction id is:\n{}'.format(txid))
 

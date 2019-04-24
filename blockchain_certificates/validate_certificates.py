@@ -31,8 +31,6 @@ def get_and_remove_chainpoint_proof(pdf_file):
 Validate the certificate
 '''
 def validate_certificate(cert, issuer_identifier, testnet):
-    valid_certificate = False
-
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
@@ -40,7 +38,7 @@ def validate_certificate(cert, issuer_identifier, testnet):
     proof = get_and_remove_chainpoint_proof(tmp_filename)
     if proof == None:
         os.remove(tmp_filename)
-        return False
+        return False, "no chainpoint_proof in metadata"
 
     # get the hash after removing the metadata
     filehash = ''
@@ -52,10 +50,8 @@ def validate_certificate(cert, issuer_identifier, testnet):
 
     # validate receipt
     cp = ChainPointV2()
-    if cp.validate_receipt(proof, filehash, issuer_identifier, testnet):
-        valid_certificate = True
-    else:
-        return False
+    if not cp.validate_receipt(proof, filehash, issuer_identifier, testnet):
+        return False, "hash and chainpoint_proof did not produce the expected merkle root"
 
     # blockchain receipt is valid but we need to also check if the certificate
     # was revoked after issuing
@@ -63,14 +59,14 @@ def validate_certificate(cert, issuer_identifier, testnet):
     data_before_issuance, data_after_issuance = network_utils.get_all_op_return_hexes(txid, testnet)
 
     # check if cert or batch was revoked from oldest to newest; if a valid
-    # revoke address is found further commands are ignored 
+    # revoke address is found further commands are ignored
     # (TODO: REVOKE ADDRESS CMD
     for op_return in reversed(data_after_issuance):
         cred_dict = cred_protocol.parse_op_return_hex(op_return)
         if cred_dict:
             if cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_batch'):
                 if txid == cred_dict['data']['txid']:
-                    return False   # log: cert invalid - batch was revoked
+                    return False, "batch was revoked"
             elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_creds'):
                 if txid == cred_dict['data']['txid']:
                     # compare the certificate hash bytes
@@ -78,22 +74,24 @@ def validate_certificate(cert, issuer_identifier, testnet):
                     ripemd_filehash = utils.ripemd160(filehash_bytes)
                     ripemd_hex = utils.bytes_to_hex(ripemd_filehash)
                     if ripemd_hex == cred_dict['data']['hashes'][0]:
-                        return False     # log: cert invalid - cert was revoked
+                        return False, "cert hash was revoked"
 
                     if len(cred_dict['data']['hashes']) > 1:
                         if ripemd_hex == cred_dict['data']['hashes'][1]:
-                            return False # log: cert invalid - cert was revoked
+                            return False, "cert hash was revoked"
             elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
                 # if correct address and valid revoke then stop checking other
                 # revokes and break loop (TODO: REVOKE ADDRESS CMD)
-                print("TODO: revoke address not implemented yet!")
-
+                if interactive:
+                    print("TODO: revoke address not implemented yet!")
+                else:
+                    raise NotImplementedError("revoke address is not implemented")
 
     # check if cert's issuance is after a revoke address cmd on that address
     # TODO: REVOKE ADDRESS CMD
     # check the data_before_issuance...  and return False!!
 
-    return True
+    return True, None
 
 
 
@@ -113,6 +111,49 @@ def load_config():
     return args
 
 
+def validate_certificates(conf, interactive=False):
+    if len( conf.f ) >= 1:
+        certificates = conf.f
+        for cert in certificates:
+            results_array = []
+            if os.path.isfile(cert):
+                filename = os.path.basename(cert)
+                if(filename.lower().endswith('.pdf')):
+                    valid, reason = validate_certificate(cert,
+                                                         conf.issuer_identifier,
+                                                         conf.testnet)
+                    if valid:
+                        if interactive:
+                            print('Certificate {} is valid!'.format(cert))
+                        else:
+                            results_array.append({ "cert": cert, "status": "valid" })
+                    else:
+                        if interactive:
+                            print('Certificate {} is _not_ valid!'.format(cert))
+                        else:
+                            results_array.append({ "cert": cert, "status":
+                                                  "invalid", "reason": reason })
+                else:
+                    if interactive:
+                        print('Skipping non-pdf file: {}'.format(cert))
+                    else:
+                        results_array.append({ "cert": cert, "status": "N/A",
+                                              "reason": "not a pdf file" })
+            else:
+                if interactive:
+                    print('Skipping non-existent file {}'.format(cert))
+                else:
+                    results_array.append({ "cert": cert, "status": "N/A",
+                                          "reason": "file not found" })
+
+            return { "results": results_array } 
+    else:
+        if interactive:
+            exit('At least one certificate needs to be provided as an argument.')
+        else:
+            raise ValueError("no certificates provided")
+
+
 
 def main():
     if sys.version_info.major < 3:
@@ -120,22 +161,7 @@ def main():
         sys.exit(1)
 
     conf = load_config()
-    if len( conf.f ) >= 1:
-        certificates = conf.f
-        for cert in certificates:
-            if os.path.isfile(cert):
-                filename = os.path.basename(cert)
-                if(filename.lower().endswith('.pdf')):
-                    if validate_certificate(cert, conf.issuer_identifier, conf.testnet):
-                        print('Certificate {} is valid!'.format(cert))
-                    else:
-                        print('Certificate {} is _not_ valid!'.format(cert))
-                else:
-                    print('Skipping non-pdf file: {}'.format(cert))
-            else:
-                print('Skipping non-existent file {}'.format(cert))
-    else:
-        exit('At least one certificate needs to be provided as an argument.')
+    validate_certificates(conf, interactive=True)
 
 
 if __name__ == "__main__":
