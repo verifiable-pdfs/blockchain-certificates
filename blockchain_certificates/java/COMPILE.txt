@@ -1,5 +1,0 @@
-TO COMPILE RUN
-
-$ javac -cp .:itextpdf-5.5.10.jar:json-simple-1.1.1.jar  FillPdf.java
-
-FROM THIS DIRECTORY

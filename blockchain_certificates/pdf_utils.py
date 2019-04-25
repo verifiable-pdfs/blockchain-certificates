@@ -8,7 +8,6 @@ import json
 import glob
 import hashlib
 from pdfrw import PdfReader, PdfWriter, PdfDict
-from fpdf import FPDF
 
 
 '''
@@ -80,7 +79,7 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
 
 '''
 Populates a pdf form template with values from a CSV file to generate the pdf
-certificates. Also uses the CSV data to add metadata in the pdf file before 
+certificates. Also uses the CSV data to add metadata in the pdf file before
 hashing.
 '''
 def populate_pdf_certificates(conf, interactive=False):
@@ -106,7 +105,7 @@ def populate_pdf_certificates(conf, interactive=False):
 
     data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
     for cert_data in data:
-        # get name to use for cert name 
+        # get name to use for cert name
         fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
         out_file = os.path.join(certificates_directory, fullname + ".pdf")
 

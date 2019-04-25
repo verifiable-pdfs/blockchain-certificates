@@ -9,6 +9,8 @@ To use one needs to satisfy the following:
   - Have python 3 installed and knowledge on using virtualenv
   - Have a Java Runtime Environment available -- note that most systems have one by default
     - this was necessary to properly handle UTF-8 characters while populating the certificate; no python OS project could handle this
+  - Download two java libraries required for the populating the pdfs: itextpdf-5.5.10.jar and json-simple-1.1.1.jar
+    - place the libraries in blockchain_certificates/java directory
   - Basic knowledge of the operating system (examples are given on a Debian-based linux system)
 
 ## Installation
