@@ -109,7 +109,7 @@ def populate_pdf_certificates(conf, interactive=False):
         fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
         out_file = os.path.join(certificates_directory, fullname + ".pdf")
 
-        _fill_pdf_form(cert_data, pdf_cert_template_file, out_file)
+        _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, interactive)
 
         _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
                            conf.cert_metadata_columns, cert_data, interactive)
@@ -140,7 +140,7 @@ Fills in the pdf form using java code that uses the itextpdf java library. This
 library is much better than the one used in pdftk (python alternative) and more
 importantly it properly supports UTF-8 characters.
 '''
-def _fill_pdf_form(fields, pdf_cert_template_file, out_file):
+def _fill_pdf_form(fields, pdf_cert_template_file, out_file, interactive=False):
 
     # prepare arguements for java
     fields_json_string = json.dumps(fields).replace('"', '\\"')
