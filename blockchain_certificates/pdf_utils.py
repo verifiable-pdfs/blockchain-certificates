@@ -152,6 +152,10 @@ def _fill_pdf_form(fields, pdf_cert_template_file, out_file):
     cmd = 'java -cp {java_path}{pathsep}{java_path}{sep}itextpdf-5.5.10.jar{pathsep}{java_path}{sep}json-simple-1.1.1.jar FillPdf "{pdf_cert_template_file}" "{out_file}" "{fields_json_string}"'.format(java_path=java_path, pathsep=os.path.pathsep, sep=os.path.sep, pdf_cert_template_file=pdf_cert_template_file, out_file=out_file, fields_json_string=fields_json_string)
     os.system(cmd)
 
+    if interactive:
+        # print progress
+        print('+', end="", flush=True)
+
 
 
 '''

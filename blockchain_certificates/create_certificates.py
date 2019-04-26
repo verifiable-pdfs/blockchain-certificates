@@ -75,7 +75,7 @@ def create_certificates(conf, interactive=False):
     # check if issuance address has not been revoked!
     # TODO: REVOKE ADDRESS CMD
 
-    pdf_utils.populate_pdf_certificates(conf)
+    pdf_utils.populate_pdf_certificates(conf, interactive)
 
     # get certificate file list here (to ensure it is identical to both
     # 'hash_certificates' and 'insert_proof_to_certificates'
