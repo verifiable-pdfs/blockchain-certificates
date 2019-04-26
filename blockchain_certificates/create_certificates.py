@@ -88,7 +88,7 @@ def create_certificates(conf, interactive=False):
     # create OP_RETURN in hex
     op_return_hex = cred_protocol.issue_cmd(conf.issuer_identifier,
                                             cp.get_merkle_root())
-    txid = publish_hash.issue_op_return(conf, op_return_hex)
+    txid = publish_hash.issue_op_return(conf, op_return_hex, interactive)
     insert_proof_to_certificates(conf, cp, txid, cert_files, interactive)
 
     return txid
