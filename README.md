@@ -15,3 +15,8 @@ More information on issuing existing certificates:
 
 <https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/issue_certificates.md>
 
+*****
+
+More information on the CRED Protocol and it's implementation:
+
+<https://github.com/UniversityOfNicosia/blockchain-certificates/wiki>
