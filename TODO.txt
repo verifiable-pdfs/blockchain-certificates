@@ -6,7 +6,7 @@ Technical
     . a global repository of metadata templates/schemas might resolve this!
 - implement as a library
   . raise exception instead of stoping execution (done)
-  . add appropriate exceptions!
+  . add appropriate (lib-specific) exceptions!
 - fault-tolerance: use 1 of N+ services to acquire OP_RETURN (asap)
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
@@ -17,7 +17,7 @@ Technical
 - idea: adding url/qrcode on metadata for extra identification!?
 
 Functionality
-- impl. issue certs with expiry date
+- impl. issue certs with expiry date (done)
 - impl. revoke address
 - Decentralized Identity
   . phase 1: link distributed sources of identity (automatic)
