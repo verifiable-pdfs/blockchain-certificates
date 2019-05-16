@@ -11,7 +11,7 @@ from pdfrw import PdfReader, PdfWriter, PdfDict
 from blockchain_certificates import cred_protocol
 from blockchain_certificates import network_utils
 from blockchain_certificates import utils
-from blockchain_proofs import ChainPointV2
+from blockchain_certificates.chainpoint import ChainPointV2
 
 '''
 Reads the chainpoint_proof metadata from the pdf file and then removes it
@@ -50,8 +50,13 @@ def validate_certificate(cert, issuer_identifier, testnet):
 
     # validate receipt
     cp = ChainPointV2()
-    if not cp.validate_receipt(proof, filehash, issuer_identifier, testnet):
-        return False, "hash and chainpoint_proof did not produce the expected merkle root"
+    valid, reason = cp.validate_receipt(proof, filehash, issuer_identifier,
+                                        testnet)
+    # display error except when the certificate expired; this is because we want
+    # revoked certificate error to be displayed before cert expired error
+    # TODO clean hard-coded reason
+    if not valid and not reason.startswith("certificate expired"):
+        return False, reason
 
     # blockchain receipt is valid but we need to also check if the certificate
     # was revoked after issuing
@@ -91,7 +96,13 @@ def validate_certificate(cert, issuer_identifier, testnet):
     # TODO: REVOKE ADDRESS CMD
     # check the data_before_issuance...  and return False!!
 
-    return True, None
+    # if not revoked but not valid this means that it was expired; now that we
+    # checked for revocations we can show the expiry error
+    if not valid:
+        return False, reason
+
+    # in a valid credential the reason could contain an expiry date
+    return True, reason
 
 
 
@@ -125,11 +136,16 @@ def validate_certificates(conf, interactive=False):
                     if valid:
                         if interactive:
                             print('Certificate {} is valid!'.format(cert))
+                            if reason:
+                                print("(" + reason + ")")
                         else:
-                            results_array.append({ "cert": cert, "status": "valid" })
+                            results_array.append({ "cert": cert, "status":
+                                                  "valid", "reason": reason })
                     else:
                         if interactive:
                             print('Certificate {} is _not_ valid!'.format(cert))
+                            if reason:
+                                print("(" + reason + ")")
                         else:
                             results_array.append({ "cert": cert, "status":
                                                   "invalid", "reason": reason })
@@ -146,7 +162,9 @@ def validate_certificates(conf, interactive=False):
                     results_array.append({ "cert": cert, "status": "N/A",
                                           "reason": "file not found" })
 
-            return { "results": results_array } 
+
+        return { "results": results_array }
+
     else:
         if interactive:
             exit('At least one certificate needs to be provided as an argument.')

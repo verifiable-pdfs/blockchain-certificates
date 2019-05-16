@@ -26,6 +26,8 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.expiry_date:
+            print('expiry_date:\t\t{}'.format(conf.expiry_date))
         print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
         consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
         if not consent:
@@ -95,6 +97,8 @@ def populate_pdf_certificates(conf, interactive=False):
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.expiry_date:
+            print('expiry_date:\t\t{}'.format(conf.expiry_date))
         print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
         consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
         if not consent:

@@ -60,3 +60,30 @@ def get_all_op_return_hexes(txid, testnet=False):
 
     return data_before_issuance, data_after_issuance
 
+
+def get_op_return_hex_from_blockchain(txid, testnet=False):
+    # uses blockcypher API for now -- TODO: expand to consult multiple services
+    if testnet:
+        blockcypher_url = "https://api.blockcypher.com/v1/btc/test3/txs/" + txid
+    else:
+        blockcypher_url = "https://api.blockcypher.com/v1/btc/main/txs/" + txid
+
+    response = requests.get(blockcypher_url).json()
+    outputs = response['outputs']
+    hash_hex = ""
+    for o in outputs:
+        script = o['script']
+        if script.startswith('6a'):
+            # when > 75 op_pushdata1 (4c) is used before length
+            if script.startswith('6a4c'):
+                # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
+                ignore_hex_chars = 6
+            else:
+                # 2 for 1 byte op_return + 2 for 1 byte data length
+                ignore_hex_chars = 4
+
+            hash_hex = script[ignore_hex_chars:]
+            break
+    return hash_hex
+
+

@@ -18,7 +18,7 @@ setup(name='blockchain-certificates',
           "fpdf==1.7.2",
           "configargparse==0.11.0",
           "bitcoin-utils==0.3.2",
-          "blockchain-proofs==0.2.1"
+          "merkletools==1.0.2"
       ],
       package_data={
           'blockchain_certificates': ['requirements.txt',

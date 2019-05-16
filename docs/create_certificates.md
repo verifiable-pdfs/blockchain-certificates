@@ -96,6 +96,7 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |certificates_directory|The directory were all the new certificates will be stored. It is recommended that this directory is always empty before running the script. If it doesn't exist it will be created. It is relative to `working_directory`. Example: `certificates`|
 |certificates_global_fields|A simple key-value object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{"date": "5 Dec 2016"}`|
 |issuer|The name of the issuer/institution. Example: `UNIVERSITY OF NEVERLAND`|
+|expiry_date|The date of expiry (if any) expressed in Unix Epoch / UTC. Example: `1553929397`|
 |**CSV file related**||
 |cert_names_csv_column|Specifies the header of the column to use to name the certificates filenames. It has to be unique for each row or else the latter certificates will overrite the former! A good approach is to use a graduate identifier or their name. Given that `graduates_csv_file` contains a column with header `name` with all the (unique) names of the graduates an example value would be: `name`|
 |cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata_object` for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata.|

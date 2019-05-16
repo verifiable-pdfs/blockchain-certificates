@@ -7,7 +7,7 @@ import glob
 import json
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
-from blockchain_proofs import ChainPointV2
+from blockchain_certificates.chainpoint import ChainPointV2
 from blockchain_certificates import pdf_utils
 from blockchain_certificates import publish_hash
 from blockchain_certificates import cred_protocol
@@ -57,6 +57,7 @@ def load_config():
     p.add_argument('-d', '--working_directory', type=str, default='.', help='the main working directory - all paths/files are relative to this')
     p.add_argument('-s', '--issuer', type=str, help='the name of the institution to (added in certificate metadata)')
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
+    p.add_argument('-x', '--expiry_date', type=str, help='absolute expiry date up until the certificates will be valid')
     p.add_argument('-v', '--graduates_csv_file', type=str, default='graduates.csv', help='the csv file with the graduate data')
     p.add_argument('-e', '--certificates_directory', type=str, default='certificates', help='the directory where the new certificates will be copied')
     p.add_argument('-g', '--certificates_global_fields', type=str, default='', help='certificates global fields expressed as JSON string')
@@ -86,8 +87,14 @@ def issue_certificates(conf, interactive=False):
     cp = prepare_chainpoint_tree(cert_hashes)
 
     # create OP_RETURN in bytes
-    op_return_bstring = cred_protocol.issue_cmd(conf.issuer_identifier,
-                                                cp.get_merkle_root())
+    if conf.expiry_date:
+        op_return_bstring = cred_protocol.issue_abs_expiry_cmd(conf.issuer_identifier,
+                                                    cp.get_merkle_root(),
+                                                    conf.expiry_date)
+    else:
+        op_return_bstring = cred_protocol.issue_cmd(conf.issuer_identifier,
+                                                    cp.get_merkle_root())
+
     txid = publish_hash.issue_op_return(conf, op_return_bstring, interactive)
     insert_proof_to_certificates(conf, cp, txid, cert_files, interactive)
 

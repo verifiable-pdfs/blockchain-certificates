@@ -42,3 +42,10 @@ def ripemd160(ibytes):
     ripemd_algo.update(ibytes)
     return ripemd_algo.digest()
 
+'''
+Convert from hex to int
+'''
+def hex_to_int(hex):
+    return int(hex, 16)
+
+

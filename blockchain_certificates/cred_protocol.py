@@ -3,14 +3,17 @@ Functions related to the creation of the OP_RETURN bytes in accordance
 to CRED meta-protocol for issuing/revoking certificates
 on the blockchain.
 '''
+import time
 from blockchain_certificates import utils
 
 # Allowed operators -- 2 bytes available
 operators = {
-    'op_issue'            : b'\x00\x04',
-    'op_revoke_batch'     : b'\x00\x08',
-    'op_revoke_creds'     : b'\x00\x0c',
-    'op_revoke_address'   : b'\xff\x00'
+    'op_issue'              : b'\x00\x04',
+    'op_issue_abs_expiry'   : b'\x00\x05',
+    #'op_issue_rel_expiry'   : b'\x00\x07',
+    'op_revoke_batch'       : b'\x00\x08',
+    'op_revoke_creds'       : b'\x00\x0c',
+    'op_revoke_address'     : b'\xff\x00'
 }
 
 '''
@@ -20,6 +23,30 @@ def issue_cmd(issuer_identifier, merkle_root):
     bstring = (_create_header() + operators['op_issue'] +
                _str_to_8_chars(issuer_identifier).encode('utf-8') +
                utils.hex_to_bytes(merkle_root))
+    return bstring
+
+
+'''
+Creates CRED protocol's issue certificates command with absolute expiry time
+expressed in UTC / Unix epoch); it uses 5 bytes for expiry
+'''
+def issue_abs_expiry_cmd(issuer_identifier, merkle_root, expiry):
+    expiry = int(expiry)
+
+    # if expiry is in the past
+    if expiry < time.time():
+        raise TypeError("Absolute expiry is in the past")
+    if expiry > 0xffffffffff:
+        raise TypeError("Absolute expiry is greater than allowed")
+
+    # uses 5 bytes so convert to hex and right justify (pad) accordingly
+    expiry_hex = format(expiry, 'x')
+    expiry_hex_padded = expiry_hex.rjust(10, '0')
+
+    bstring = (_create_header() + operators['op_issue_abs_expiry'] +
+               _str_to_8_chars(issuer_identifier).encode('utf-8') +
+               utils.hex_to_bytes(merkle_root) +
+               utils.hex_to_bytes(expiry_hex_padded))
     return bstring
 
 
@@ -49,9 +76,9 @@ def revoke_creds_cmd(txid, cred_hash1, cred_hash2=None):
 '''
 Creates CRED protocol's revoke address command
 '''
-def revoke_address_cmd(address):
-    string = _create_header() + operators['op_revoke_address'] + address
-    return text_to_hex(string)
+#def revoke_address_cmd(address):
+#    string = _create_header() + operators['op_revoke_address'] + address
+#    return text_to_hex(string)
 
 
 '''
@@ -85,9 +112,10 @@ def _str_to_8_chars(string):
 Parses op_return (hex) to create a python dictionary for easy access.
 Dictionary contains:
 version:
-cmd: op_issue | op_revoke_batch | op_revoke_creds | op_revoke_address
+cmd: op_issue | op_issue_abs_expiry | op_revoke_batch | op_revoke_creds | op_revoke_address
 data:
   for op_issue it has -> issuer_identifier, merkle_root
+  for op_issue_abs_expiry it has -> issuer_identifier, merkle_root, expiry
   for op_revoke_batch it has -> txid
   for op_revoke_creds it has -> txid, [hashes]
   for op_revoke_address it has -> hash
@@ -104,6 +132,10 @@ def parse_op_return_hex(hex_data):
         if data_dict['cmd'] == hex_op('op_issue'):
             data_dict['data']['issuer_identifier'] = hex_data[16:32]
             data_dict['data']['merkle_root'] = hex_data[32:96]
+        elif data_dict['cmd'] == hex_op('op_issue_abs_expiry'):
+            data_dict['data']['issuer_identifier'] = hex_data[16:32]
+            data_dict['data']['merkle_root'] = hex_data[32:96]
+            data_dict['data']['expiry'] = hex_data[96:116]
         elif data_dict['cmd'] == hex_op('op_revoke_batch'):
             data_dict['data']['txid'] = hex_data[16:80]
         elif data_dict['cmd'] == hex_op('op_revoke_creds'):
