@@ -152,8 +152,9 @@ class ChainPointV2(object):
         if(not merkle_root.lower() == hash_hex.lower()):
             return False, "certificate's merkle root is different than the one in the blockchain"
 
-        # check expiration date if issued with expiry date
-        if expiry_hex:
+        # only for CRED protocol certificates check expiration date if
+        # issued with expiry date
+        if op_dict and expiry_hex:
             expiry = utils.hex_to_int(expiry_hex)
             if expiry > int(time.time()):
                 return True, "valid until: " + str(expiry)
