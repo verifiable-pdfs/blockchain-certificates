@@ -62,6 +62,9 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
                      key=lambda x: hash(x['amount']), reverse=True)
 
+    if not unspent:
+        raise ValueError("No UTXOs found")
+
     issuing_pubkey = proxy.getaddressinfo(conf.issuing_address)['pubkey']
 
     tx_inputs = [ TxInput(unspent[0]['txid'], unspent[0]['vout']) ]

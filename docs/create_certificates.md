@@ -54,7 +54,7 @@ working_directory
 ```
 
 ### Usage: `create-certificates`
-Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. The PDF metadata `metadata_object` is added to the PDF. It is a JSON object that always contains `issuer` and `issuer_address` as well as all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `metadata_object`, and `chainpoint_proof`.
+Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. The PDF metadata fields contain an `issuer` field with information about the issuer (name, Bitcoin address/identification). It also contains a `metadata` field which contains all the user-defined metadata fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata in the `chainpoint_proof` field in each PDF certificate. The compulsory metadata are `issuer`, and `chainpoint_proof`.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
@@ -94,12 +94,12 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |pdf_cert_template|The name of the PDF template file relative to `working_directory`. Example: `certificate_template.pdf`|
 |graduates_csv_file|The name of the comma separated value file that contains individual information for each graduate. It is relative to `working_directory`. Example: `graduates.csv`|
 |certificates_directory|The directory were all the new certificates will be stored. It is recommended that this directory is always empty before running the script. If it doesn't exist it will be created. It is relative to `working_directory`. Example: `certificates`|
-|certificates_global_fields|A simple key-value object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{"date": "5 Dec 2016"}`|
+|certificates_global_fields|An object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{ "fields": [ { "date": { "label": "Date", "order": 2, "hide": false, "value": "5 Dec 2016" } } ] }`|
 |issuer|The name of the issuer/institution. Example: `UNIVERSITY OF NEVERLAND`|
 |expiry_date|The date of expiry (if any) expressed in Unix Epoch / UTC. Example: `1553929397`|
 |**CSV file related**||
 |cert_names_csv_column|Specifies the header of the column to use to name the certificates filenames. It has to be unique for each row or else the latter certificates will overrite the former! A good approach is to use a graduate identifier or their name. Given that `graduates_csv_file` contains a column with header `name` with all the (unique) names of the graduates an example value would be: `name`|
-|cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata_object` for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata.|
+|cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata` field for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata. Example: `{ "columns": [ { "student_name": { "label": "Student Name", "order": 1, "hide":false } } ] }`|
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
 |**Revocation related**|Mutually exclusive options|

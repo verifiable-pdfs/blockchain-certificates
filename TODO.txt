@@ -1,9 +1,6 @@
 Technical
 - cleanup: update cert variables to cred (much later)
   . and also rename the repository to blockchain-credentials (much later)
-  . note that metadata for certificates different from metadata for driving licenses!!
-    . which affects the validator GUI
-    . a global repository of metadata templates/schemas might resolve this!
 - implement as a library
   . raise exception instead of stoping execution (done)
   . add appropriate (lib-specific) exceptions!
@@ -13,13 +10,13 @@ Technical
 - add testing (unit/system), e.g. with old certificates and past entries
   . certs need to be fake though
 - support regtest?
+- validator to use a local node option?
 - PDF plugin for validating from viewer
 - idea: adding url/qrcode on metadata for extra identification!?
 - ADD SEGWIT tx... for malleability fix (and cheaper txs)
 - ADD prerequisite of at least 3 confirmations per issuance and revocation, etc.
 
 Functionality
-- impl. issue certs with expiry date (done)
 - impl. revoke address
 - Decentralized Identity
   . phase 1: link distributed sources of identity (automatic)
