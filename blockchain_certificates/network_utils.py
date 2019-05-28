@@ -10,6 +10,25 @@ certificates. Get tx before issuance (for checking revoked addresses) and after
 issuance (for checking revoked batches and/or certificates
 '''
 def get_all_op_return_hexes(address, txid, testnet=False):
+    # hard-coded services for now
+    services = ['blockcypher']
+    required_successes = 1
+
+    # python request threads to call all APIs simultaneously
+    # TODO
+
+    data_before_issuance, data_after_issuance = \
+        get_blockcypher_op_return_hexes(address, txid, testnet)
+
+    # TODO logic that makes sure that there is enough decentralization and
+    # redundancy in the results...
+
+    return data_before_issuance, data_after_issuance
+
+
+
+
+def get_blockcypher_op_return_hexes(address, txid, testnet=False):
     blockcypher_url = 'http://api.blockcypher.com/v1/btc'
     network = 'test3' if testnet else 'main'
 
@@ -62,30 +81,5 @@ def get_all_op_return_hexes(address, txid, testnet=False):
 
     return data_before_issuance, data_after_issuance
 
-
-#def get_op_return_hex_from_blockchain(txid, testnet=False):
-#    # uses blockcypher API for now -- TODO: expand to consult multiple services
-#    if testnet:
-#        blockcypher_url = "https://api.blockcypher.com/v1/btc/test3/txs/" + txid
-#    else:
-#        blockcypher_url = "https://api.blockcypher.com/v1/btc/main/txs/" + txid
-#
-#    response = requests.get(blockcypher_url).json()
-#    outputs = response['outputs']
-#    hash_hex = ""
-#    for o in outputs:
-#        script = o['script']
-#        if script.startswith('6a'):
-#            # when > 75 op_pushdata1 (4c) is used before length
-#            if script.startswith('6a4c'):
-#                # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
-#                ignore_hex_chars = 6
-#            else:
-#                # 2 for 1 byte op_return + 2 for 1 byte data length
-#                ignore_hex_chars = 4
-#
-#            hash_hex = script[ignore_hex_chars:]
-#            break
-#    return hash_hex
 
 
