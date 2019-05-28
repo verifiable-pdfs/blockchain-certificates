@@ -14,6 +14,28 @@ from blockchain_certificates import utils
 from blockchain_certificates.chainpoint import ChainPointV2
 
 '''
+Gets issuer address from pdf metadata; requires backward compatibility using
+pdf metadata version
+'''
+def get_issuer_address(pdf_file):
+    pdf = PdfReader(pdf_file)
+    try:
+        version = pdf.Info.version
+        if(version == '1'):
+            issuer = json.loads( pdf.Info.issuer.decode() )
+            return issuer['identity']['address']
+        else:
+            issuer_address = pdf.Info.issuer_address
+            if issuer_address:
+                return issuer_address.decode()
+            else:
+                metadata_object = json.loads( pdf.Info.metadata_object.decode() )
+                return metadata_object['issuer_address']
+    except AttributeError:
+        raise ValueError("Could not find issuer address in pdf")
+
+
+'''
 Reads the chainpoint_proof metadata from the pdf file and then removes it
 '''
 def get_and_remove_chainpoint_proof(pdf_file):
@@ -27,6 +49,7 @@ def get_and_remove_chainpoint_proof(pdf_file):
     PdfWriter().write(pdf_file, pdf)
     return proof
 
+
 '''
 Validate the certificate
 '''
@@ -34,6 +57,8 @@ def validate_certificate(cert, issuer_identifier, testnet):
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
+
+    issuer_address = get_issuer_address(tmp_filename)
 
     proof = get_and_remove_chainpoint_proof(tmp_filename)
     if proof == None:
@@ -48,20 +73,25 @@ def validate_certificate(cert, issuer_identifier, testnet):
     # cleanup now that we got original filehash
     os.remove(tmp_filename)
 
-    # validate receipt
+    # instantiate chainpoint object
     cp = ChainPointV2()
-    valid, reason = cp.validate_receipt(proof, filehash, issuer_identifier,
+
+    txid = cp.get_txid_from_receipt(proof)
+
+    # make request to get txs regarding this address
+    # issuance is the first element of data_before_issuance
+    data_before_issuance, data_after_issuance = \
+        network_utils.get_all_op_return_hexes(issuer_address, txid, testnet)
+
+    # validate receipt
+    valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier,
                                         testnet)
+
     # display error except when the certificate expired; this is because we want
     # revoked certificate error to be displayed before cert expired error
     # TODO clean hard-coded reason
     if not valid and not reason.startswith("certificate expired"):
         return False, reason
-
-    # blockchain receipt is valid but we need to also check if the certificate
-    # was revoked after issuing
-    txid = proof['anchors'][0]['sourceId']
-    data_before_issuance, data_after_issuance = network_utils.get_all_op_return_hexes(txid, testnet)
 
     # check if cert or batch was revoked from oldest to newest; if a valid
     # revoke address is found further commands are ignored
