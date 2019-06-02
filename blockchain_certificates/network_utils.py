@@ -84,22 +84,15 @@ def get_blockcypher2_op_return_hexes(address, txid, results, key, testnet=False)
         for o in outs:
             # get op_return_hex, if any, and exit
             if o['script'].startswith('6a'):
-                script = o['script']
-                # when > 75 op_pushdata1 (4c) is used before length
-                if script.startswith('6a4c'):
-                    # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
-                    ignore_hex_chars = 6
-                else:
-                    # 2 for 1 byte op_return + 2 for 1 byte data length
-                    ignore_hex_chars = 4
+                data = get_op_return_data_from_script(o['script'])
 
                 if not found_issuance:
                     # to check certs revocations we can iterate this list in reverse!
-                    data_after_issuance.append(script[ignore_hex_chars:])
+                    data_after_issuance.append(data)
                 else:
                     # current issuance is actually the first element of this list!
                     # to check for addr revocations we can iterate this list as is
-                    data_before_issuance.append(script[ignore_hex_chars:])
+                    data_before_issuance.append(data)
 
     if not found_issuance:
         raise ValueError("Txid for issuance not found in address' transactions")
@@ -141,22 +134,15 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, testnet=False):
         for o in outs:
             # get op_return_hex, if any, and exit
             if o['script'].startswith('6a'):
-                script = o['script']
-                # when > 75 op_pushdata1 (4c) is used before length
-                if script.startswith('6a4c'):
-                    # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
-                    ignore_hex_chars = 6
-                else:
-                    # 2 for 1 byte op_return + 2 for 1 byte data length
-                    ignore_hex_chars = 4
+                data = get_op_return_data_from_script(o['script'])
 
                 if not found_issuance:
                     # to check certs revocations we can iterate this list in reverse!
-                    data_after_issuance.append(script[ignore_hex_chars:])
+                    data_after_issuance.append(data)
                 else:
                     # current issuance is actually the first element of this list!
                     # to check for addr revocations we can iterate this list as is
-                    data_before_issuance.append(script[ignore_hex_chars:])
+                    data_before_issuance.append(data)
 
     if not found_issuance:
         raise ValueError("Txid for issuance not found in address' transactions")
@@ -166,4 +152,20 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, testnet=False):
     results[key]['success'] = True
 
 
+def get_bitcoincore_op_return_hexes(address, txid, results, key,
+                                    testnet=False):
+    pass
+
+
+def get_op_return_data_from_script(script):
+    # when > 75 op_pushdata1 (4c) is used before length
+    if script.startswith('6a4c'):
+        # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte
+        # data length
+        ignore_hex_chars = 6
+    else:
+        # 2 for 1 byte op_return + 2 for 1 byte data length
+        ignore_hex_chars = 4
+
+    return script[ignore_hex_chars:]
 

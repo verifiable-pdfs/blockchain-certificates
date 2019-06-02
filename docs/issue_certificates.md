@@ -104,7 +104,8 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |**Blockchain related**|*Note: currently only Bitcoin's blockchain is supported.*|
 |issuing_address|The Bitcoin (testnet or mainnet) address to use for creating the OP_RETURN transaction that will issue the index document's hash in the blockchain. It should be a legacy address (for now) and to have sufficient funds to cover just the fees of the transaction. If more funds are present we send them back as change to the same address. Make sure that you have the private key for this address safe since that might be the only formal way of proving who issued the certificates. Example for testnet: `mgs9DLttzvWFkZ46YLSNKSZbgSNiMNUsdJ`|
 |full_node_url|The URL of the full node together with the port. Example for testnet: `127.0.0.1:18332`
-|full_node_rpc_user|The name of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `create-certificates` script. Example: `kostasnode`|
+|full_node_rpc_user|The name of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `issue-certificates` script. Example: `kostasnode`|
+|full_node_rpc_password|The password of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `issue-certificates` script. Example: `kostastoolongtoguess`|
 |testnet|Specifies whether it will use testnet of mainnet to issue the hash. Example: `true`|
 |tx_fee_per_byte|Specifies the mining fee to use per byte of the transaction's size. Consult https://bitcoinfees.21.co or another site for possible values. Example value on Jan 2017 is: `100`|
 |issuer_identifier|It is possible to specify a value (max 8 bytes/chars) that is added in the OP_RETURN transaction to differentiate the issuer. It is optional. Example value: "UNicDC ".

@@ -44,7 +44,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
             sys.exit()
 
     # test explicitly when non interactive
-    if interactive:
+    if not conf.full_node_rpc_password and interactive:
         conf.full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
     # initialize full node connection

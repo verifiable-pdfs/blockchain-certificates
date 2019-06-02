@@ -23,3 +23,4 @@ Functionality
   . phase 2: proper decentralized identity management (blockchain specific)
 
 - when spending UTXOs... always spend all of them (eventually on 2 will exist) and send the change to the same address (test with dust limit as well... to ensure that it is spendable properly)
+
