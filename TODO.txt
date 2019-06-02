@@ -1,25 +1,26 @@
 Technical
 - cleanup: update cert variables to cred (much later)
-  . and also rename the repository to blockchain-credentials (much later)
+  . and also rename the repository to blockchain-credentials or CRED, etc. (much later)
 - implement as a library
   . raise exception instead of stoping execution (done)
   . add appropriate (lib-specific) exceptions!
-- fault-tolerance: use 1 of N+ services to acquire OP_RETURN (almost done)
+- add more validation services (currently bitcoincore and blockcypher)
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
 - add testing (unit/system), e.g. with old certificates and past entries
   . certs need to be fake though
 - support regtest?
-- validator to use a local node option?
 - PDF plugin for validating from viewer
-- idea: adding url/qrcode on metadata for extra identification!?
+- idea: adding url/qrcode on metadata for extra identification (as a second page to the pdf)!?
+  . test if adding/removing pages in the pdf changes the hash!
 - ADD SEGWIT tx... for malleability fix (and cheaper txs)
-- ADD prerequisite of at least 3 confirmations per issuance and revocation, etc.
+- ADD prerequisite of at least 3 confirmations per issuance and revocation, etc. ?
 
 Functionality
 - impl. revoke address
 - Decentralized Identity
   . phase 1: link distributed sources of identity (automatic)
+    . e.g. via domain name
   . phase 2: proper decentralized identity management (blockchain specific)
 
 - when spending UTXOs... always spend all of them (eventually on 2 will exist) and send the change to the same address (test with dust limit as well... to ensure that it is spendable properly)
