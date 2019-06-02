@@ -10,11 +10,11 @@ Gets all the op_return hexes stored from the specified txid (used to issue the
 certificates. Get tx before issuance (for checking revoked addresses) and after
 issuance (for checking revoked batches and/or certificates
 '''
-def get_all_op_return_hexes(address, txid, testnet=False):
+def get_all_op_return_hexes(address, txid, validation_services, testnet=False):
+    print(validation_services)
+    services = validation_services['validation_services']
+    required_successes = validation_services['required_successes']
 
-    # hard-coded services for now
-    services = ['blockcypher', 'blockcypher2']
-    required_successes = 1
     successes = 0
     threads_results = {s:{'success':False, 'before':[], 'after':[]} for s in services}
     final_results = []

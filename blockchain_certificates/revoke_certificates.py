@@ -150,6 +150,7 @@ def load_config():
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
+    p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-f', '--tx_fee_per_byte', type=int, default=100, help='the fee per transaction byte in satoshis')
     args, _ = p.parse_known_args()
