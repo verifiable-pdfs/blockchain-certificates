@@ -151,7 +151,7 @@ def load_config():
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-p', '--issuer_identifier', type=str, help='optional 8 bytes issuer code to be displayed in the blockchain')
     p.add_argument('-v', '--validation_services', type=str,
-                   default='{ "validation_services": [ "blockcypher" ], "required_successes": 1}',
+                   default='{ "validation_services": [ {"blockcypher":{} } ], "required_successes": 1}',
                    help='Which validation services to use and the minimum required successes')
     p.add_argument('-f', nargs='+', help='a list of certificate pdf files to validate')
     args, _ = p.parse_known_args()

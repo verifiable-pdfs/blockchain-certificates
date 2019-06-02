@@ -24,3 +24,6 @@ Functionality
 
 - when spending UTXOs... always spend all of them (eventually on 2 will exist) and send the change to the same address (test with dust limit as well... to ensure that it is spendable properly)
 
+NOTE
+- transactions acquired by the validator (for all services) need to have "change" to the issuer address to be picked up by listreceivedbyaddress
+  . for btcd this might not be needed

@@ -3,6 +3,7 @@ Functions related to network services
 '''
 import requests
 from threading import Thread
+from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 
 '''
@@ -11,19 +12,20 @@ certificates. Get tx before issuance (for checking revoked addresses) and after
 issuance (for checking revoked batches and/or certificates
 '''
 def get_all_op_return_hexes(address, txid, validation_services, testnet=False):
-    print(validation_services)
     services = validation_services['validation_services']
     required_successes = validation_services['required_successes']
 
     successes = 0
-    threads_results = {s:{'success':False, 'before':[], 'after':[]} for s in services}
+    threads_results = {list(s.keys())[0]:{'success':False, 'before':[], 'after':[]} for s in services}
     final_results = []
 
     # threads to call all functions/APIs simultaneously
     threads = []
     for s in services:
-        target = globals()["get_" + s + "_op_return_hexes"]
-        thread = Thread(target=target, args=[address, txid, threads_results, s, testnet])
+        name = list(s.keys())[0]
+        target = globals()["get_" + name + "_op_return_hexes"]
+        thread = Thread(target=target, args=[address, txid, threads_results,
+                                             name, s[name], testnet])
         thread.start()
         threads.append(thread)
 
@@ -35,9 +37,10 @@ def get_all_op_return_hexes(address, txid, validation_services, testnet=False):
     # redundancy in the results; currently ensure that we have
     # required_successes identical results returned from all the services
     for s in services:
-        if threads_results[s]['success']:
+        name = list(s.keys())[0]
+        if threads_results[name]['success']:
             successes += 1
-            final_results.append(threads_results[s])
+            final_results.append(threads_results[name])
             if successes >= required_successes:
                 break
 
@@ -52,109 +55,133 @@ def get_all_op_return_hexes(address, txid, validation_services, testnet=False):
 
 
 
-'''USED AS A 2ND TEST SERVICE'''
-def get_blockcypher2_op_return_hexes(address, txid, results, key, testnet=False):
-    blockcypher_url = 'http://api.blockcypher.com/v1/btc'
-    network = 'test3' if testnet else 'main'
+'''
+Uses blockcypher's free API (note there is a limit of a couple thousanda
+validations per day
+'''
+def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=False):
 
-    address_txs_url = '{}/{}/addrs/{}/full'.format(blockcypher_url, network, address)
+    try:
 
-    params = { 'limit': 50 }  # max tx per request on blockcypher
-    address_txs = requests.get(address_txs_url, params=params).json()
-    new_start_height = address_txs['txs'][-1]['block_height']
-    all_relevant_txs = address_txs['txs']
+        blockcypher_url = 'http://api.blockcypher.com/v1/btc'
+        network = 'test3' if testnet else 'main'
 
-    while 'hasMore' in address_txs and address_txs['hasMore']:
-        params['before'] = new_start_height
-        address_txs = requests.get(address_txs_url, params=params)
+        address_txs_url = '{}/{}/addrs/{}/full'.format(blockcypher_url, network, address)
+
+        params = { 'limit': 50 }  # max tx per request on blockcypher
+        address_txs = requests.get(address_txs_url, params=params).json()
         new_start_height = address_txs['txs'][-1]['block_height']
-        # results are newest first
-        all_relevant_txs = all_relevant_txs + address_txs['txs']
+        all_relevant_txs = address_txs['txs']
 
-    data_before_issuance = []
-    data_after_issuance = []
-    found_issuance = False
-    for tx in all_relevant_txs:
-        # tx hash needs to be identical with txid from proof and that is the
-        # actual issuance
-        if tx['hash'] == txid:
-            found_issuance = True
+        while 'hasMore' in address_txs and address_txs['hasMore']:
+            params['before'] = new_start_height
+            address_txs = requests.get(address_txs_url, params=params)
+            new_start_height = address_txs['txs'][-1]['block_height']
+            # results are newest first
+            all_relevant_txs = all_relevant_txs + address_txs['txs']
 
-        outs = tx['outputs']
-        for o in outs:
-            # get op_return_hex, if any, and exit
-            if o['script'].startswith('6a'):
-                data = get_op_return_data_from_script(o['script'])
+        data_before_issuance = []
+        data_after_issuance = []
+        found_issuance = False
+        for tx in all_relevant_txs:
+            # tx hash needs to be identical with txid from proof and that is the
+            # actual issuance
+            if tx['hash'] == txid:
+                found_issuance = True
 
-                if not found_issuance:
-                    # to check certs revocations we can iterate this list in reverse!
-                    data_after_issuance.append(data)
-                else:
-                    # current issuance is actually the first element of this list!
-                    # to check for addr revocations we can iterate this list as is
-                    data_before_issuance.append(data)
+            outs = tx['outputs']
 
-    if not found_issuance:
-        raise ValueError("Txid for issuance not found in address' transactions")
+            # consider only outputs that received an amount to the specified
+            # address -- to be compatible with bitcoincore service that uses
+            # listreceivedbyaddress
+            did_receive_in_address = False
+            for o in outs:
+                if o['addresses'] and address in o['addresses']:
+                    did_receive_in_address = True
+            if not did_receive_in_address:
+                continue
 
-    results[key]['before'] = data_before_issuance
-    results[key]['after'] = data_after_issuance
-    results[key]['success'] = True
+            for o in outs:
+                # get op_return_hex, if any, and exit
+                if o['script'].startswith('6a'):
+                    data = get_op_return_data_from_script(o['script'])
 
+                    if not found_issuance:
+                        # to check certs revocations we can iterate this list in reverse!
+                        data_after_issuance.append(data)
+                    else:
+                        # current issuance is actually the first element of this list!
+                        # to check for addr revocations we can iterate this list as is
+                        data_before_issuance.append(data)
 
+        if not found_issuance:
+            raise ValueError("Txid for issuance not found in address' transactions")
 
-def get_blockcypher_op_return_hexes(address, txid, results, key, testnet=False):
-    blockcypher_url = 'http://api.blockcypher.com/v1/btc'
-    network = 'test3' if testnet else 'main'
+        results[key]['before'] = data_before_issuance
+        results[key]['after'] = data_after_issuance
+        results[key]['success'] = True
 
-    address_txs_url = '{}/{}/addrs/{}/full'.format(blockcypher_url, network, address)
-
-    params = { 'limit': 50 }  # max tx per request on blockcypher
-    address_txs = requests.get(address_txs_url, params=params).json()
-    new_start_height = address_txs['txs'][-1]['block_height']
-    all_relevant_txs = address_txs['txs']
-
-    while 'hasMore' in address_txs and address_txs['hasMore']:
-        params['before'] = new_start_height
-        address_txs = requests.get(address_txs_url, params=params)
-        new_start_height = address_txs['txs'][-1]['block_height']
-        # results are newest first
-        all_relevant_txs = all_relevant_txs + address_txs['txs']
-
-    data_before_issuance = []
-    data_after_issuance = []
-    found_issuance = False
-    for tx in all_relevant_txs:
-        # tx hash needs to be identical with txid from proof and that is the
-        # actual issuance
-        if tx['hash'] == txid:
-            found_issuance = True
-
-        outs = tx['outputs']
-        for o in outs:
-            # get op_return_hex, if any, and exit
-            if o['script'].startswith('6a'):
-                data = get_op_return_data_from_script(o['script'])
-
-                if not found_issuance:
-                    # to check certs revocations we can iterate this list in reverse!
-                    data_after_issuance.append(data)
-                else:
-                    # current issuance is actually the first element of this list!
-                    # to check for addr revocations we can iterate this list as is
-                    data_before_issuance.append(data)
-
-    if not found_issuance:
-        raise ValueError("Txid for issuance not found in address' transactions")
-
-    results[key]['before'] = data_before_issuance
-    results[key]['after'] = data_after_issuance
-    results[key]['success'] = True
+    except Exception:
+        # don't break -- ignore result of this thread
+        pass
 
 
-def get_bitcoincore_op_return_hexes(address, txid, results, key,
+
+'''
+Uses a fully indexed bitcoin core node (txindex=1) to get all transactions of
+the address
+'''
+def get_bitcoincore_op_return_hexes(address, txid, results, key, conf,
                                     testnet=False):
-    pass
+    try:
+
+        url = conf['full_url']
+
+        rpc_conn = AuthServiceProxy(url)
+        addr_txs = rpc_conn.listreceivedbyaddress(0, True, True, address)[0]['txids']
+
+        # create batch jsonrpc to get all the txs data for each txid above
+        get_tx_commands = [ [ "getrawtransaction", trans_id, True] for trans_id in addr_txs ]
+        all_unsorted_relevant_txs = rpc_conn.batch_(get_tx_commands)
+
+        # sort transactions with blocktime desc (i.e. newest first)
+        all_relevant_txs = sorted(all_unsorted_relevant_txs, key=lambda x:
+                                  hash(x['blocktime']), reverse=True)
+
+        data_before_issuance = []
+        data_after_issuance = []
+        found_issuance = False
+        for tx in all_relevant_txs:
+            # tx hash needs to be identical with txid from proof and that is the
+            # actual issuance
+            if tx['txid'] == txid:
+                found_issuance = True
+
+            outs = tx['vout']
+            for o in outs:
+                # get op_return_hex, if any, and exit
+                if o['scriptPubKey']['hex'].startswith('6a'):
+                    data = get_op_return_data_from_script(o['scriptPubKey']['hex'])
+
+                    if not found_issuance:
+                        # to check certs revocations we can iterate this list in reverse!
+                        data_after_issuance.append(data)
+                    else:
+                        # current issuance is actually the first element of this list!
+                        # to check for addr revocations we can iterate this list as is
+                        data_before_issuance.append(data)
+
+        if not found_issuance:
+            raise ValueError("Txid for issuance not found in address' transactions")
+
+        results[key]['before'] = data_before_issuance
+        results[key]['after'] = data_after_issuance
+        results[key]['success'] = True
+
+    except Exception:
+        # don't break -- ignore result of this thread
+        pass
+
 
 
 def get_op_return_data_from_script(script):

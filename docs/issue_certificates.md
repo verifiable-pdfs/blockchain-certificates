@@ -97,7 +97,7 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata` field for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata. Example: `{ "columns": [ { "student_name": { "label": "Student Name", "order": 1, "hide":false } } ] }`|
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
-|validation_services|Specify the validation services to use and how many successes required. Example (and default): `{ "validation_services": [ "blockcypher" ], "required_successes": 1}`|
+|validation_services|Specify the validation services to use and how many successes required. Example (and default): `{ "validation_services": [ {"blockcypher":{} } ], "required_successes": 1}`. Another service can be using a bitcoin core node: `... {"bitcoincore": { "full_url": "http://user:password@127.0.0.1:18332" }} ...`|
 |**Revocation related**|Mutually exclusive options|
 |p|Specify the PDF certificates that we need to revoke.|
 |batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|
