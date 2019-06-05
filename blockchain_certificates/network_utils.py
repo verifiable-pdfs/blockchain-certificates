@@ -27,7 +27,7 @@ def get_all_op_return_hexes(txid, testnet=False):
 
     while 'hasMore' in address_txs and address_txs['hasMore']:
         params['before'] = new_start_height
-        address_txs = requests.get(address_txs_url, params=params)
+        address_txs = requests.get(address_txs_url, params=params).json()
         new_start_height = address_txs['txs'][-1]['block_height']
         # results are newest first
         all_relevant_txs = all_relevant_txs + address_txs['txs']
