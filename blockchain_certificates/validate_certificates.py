@@ -53,7 +53,7 @@ def get_and_remove_chainpoint_proof(pdf_file):
 '''
 Validate the certificate
 '''
-def validate_certificate(cert, issuer_identifier, testnet, validation_services):
+def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
@@ -82,7 +82,7 @@ def validate_certificate(cert, issuer_identifier, testnet, validation_services):
     # issuance is the first element of data_before_issuance
     data_before_issuance, data_after_issuance = \
         network_utils.get_all_op_return_hexes(issuer_address, txid,
-                                              validation_services, testnet)
+                                              blockchain_services, testnet)
 
     # validate receipt
     valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier,
@@ -150,9 +150,9 @@ def load_config():
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-p', '--issuer_identifier', type=str, help='optional 8 bytes issuer code to be displayed in the blockchain')
-    p.add_argument('-v', '--validation_services', type=str,
-                   default='{ "validation_services": [ {"blockcypher":{} } ], "required_successes": 1}',
-                   help='Which validation services to use and the minimum required successes')
+    p.add_argument('-b', '--blockchain_services', type=str,
+                   default='{ "services": [ {"blockcypher":{} } ], "required_successes": 1}',
+                   help='Which blockchain services to use and the minimum required successes')
     p.add_argument('-f', nargs='+', help='a list of certificate pdf files to validate')
     args, _ = p.parse_known_args()
     return args
@@ -169,8 +169,12 @@ def validate_certificates(conf, interactive=False):
                     valid, reason = validate_certificate(cert,
                                                          conf.issuer_identifier,
                                                          conf.testnet,
-                                                         json.loads(conf.validation_services))
+                                                         json.loads(conf.blockchain_services))
                     if valid:
+                        # Check the issuer's validation methods
+                        # TODO
+                        #network_utils.validate_issuer(issuer_address, txid,
+                        #                      validation_services, testnet)
                         if interactive:
                             print('Certificate {} is valid!'.format(cert))
                             if reason:

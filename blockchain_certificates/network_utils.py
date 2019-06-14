@@ -11,9 +11,9 @@ Gets all the op_return hexes stored from the specified txid (used to issue the
 certificates. Get tx before issuance (for checking revoked addresses) and after
 issuance (for checking revoked batches and/or certificates
 '''
-def get_all_op_return_hexes(address, txid, validation_services, testnet=False):
-    services = validation_services['validation_services']
-    required_successes = validation_services['required_successes']
+def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
+    services = blockchain_services['services']
+    required_successes = blockchain_services['required_successes']
 
     successes = 0
     threads_results = {list(s.keys())[0]:{'success':False, 'before':[], 'after':[]} for s in services}
@@ -121,7 +121,9 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
         results[key]['after'] = data_after_issuance
         results[key]['success'] = True
 
-    except Exception:
+    except Exception as e:
+        # TODO log error -- print(e)
+
         # don't break -- ignore result of this thread
         pass
 
@@ -178,7 +180,9 @@ def get_bitcoincore_op_return_hexes(address, txid, results, key, conf,
         results[key]['after'] = data_after_issuance
         results[key]['success'] = True
 
-    except Exception:
+    except Exception as e:
+        # TODO log error -- print(e)
+
         # don't break -- ignore result of this thread
         pass
 
