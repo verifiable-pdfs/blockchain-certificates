@@ -4,7 +4,7 @@ Technical
 - implement as a library
   . raise exception instead of stoping execution (done)
   . add appropriate (lib-specific) exceptions!
-- add more validation services (currently bitcoincore and blockcypher)
+- add more validation services (currently btcd node and blockcypher)
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
 - add testing (unit/system), e.g. with old certificates and past entries

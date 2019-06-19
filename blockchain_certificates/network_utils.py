@@ -55,8 +55,22 @@ def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
 
 
 
+def get_op_return_data_from_script(script):
+    # when > 75 op_pushdata1 (4c) is used before length
+    if script.startswith('6a4c'):
+        # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte
+        # data length
+        ignore_hex_chars = 6
+    else:
+        # 2 for 1 byte op_return + 2 for 1 byte data length
+        ignore_hex_chars = 4
+
+    return script[ignore_hex_chars:]
+
+
+
 '''
-Uses blockcypher's free API (note there is a limit of a couple thousanda
+Uses blockcypher's free API (note there is a limit of around a thousand
 validations per day
 '''
 def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=False):
@@ -91,16 +105,6 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
 
             outs = tx['outputs']
 
-            # consider only outputs that received an amount to the specified
-            # address -- to be compatible with bitcoincore service that uses
-            # listreceivedbyaddress
-            did_receive_in_address = False
-            for o in outs:
-                if o['addresses'] and address in o['addresses']:
-                    did_receive_in_address = True
-            if not did_receive_in_address:
-                continue
-
             for o in outs:
                 # get op_return_hex, if any, and exit
                 if o['script'].startswith('6a'):
@@ -129,26 +133,77 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
 
 
 
+#'''
+#Uses a fully indexed bitcoin core node (txindex=1) to get all transactions of
+#the address. Note this will work ONLY if the addresses are wallet transactions.
+#'''
+# TODO This method is not very useful after all. TO DELETE?
+#def get_bitcoincore_op_return_hexes(address, txid, results, key, conf,
+#                                    testnet=False):
+#    try:
+#
+#        url = conf['full_url']
+#        rpc_conn = AuthServiceProxy(url)
+#        addr_txs = rpc_conn.listreceivedbyaddress(0, True, True, address)[0]['txids']
+#
+#        # create batch jsonrpc to get all the txs data for each txid above
+#        get_tx_commands = [ [ "getrawtransaction", trans_id, True] for trans_id in addr_txs ]
+#        all_unsorted_relevant_txs = rpc_conn.batch_(get_tx_commands)
+#
+#        # sort transactions with blocktime desc (i.e. newest first)
+#        all_relevant_txs = sorted(all_unsorted_relevant_txs, key=lambda x:
+#                                  hash(x['blocktime']), reverse=True)
+#
+#        data_before_issuance = []
+#        data_after_issuance = []
+#        found_issuance = False
+#        for tx in all_relevant_txs:
+#            # tx hash needs to be identical with txid from proof and that is the
+#            # actual issuance
+#            if tx['txid'] == txid:
+#                found_issuance = True
+#
+#            outs = tx['vout']
+#            for o in outs:
+#                # get op_return_hex, if any, and exit
+#                if o['scriptPubKey']['hex'].startswith('6a'):
+#                    data = get_op_return_data_from_script(o['scriptPubKey']['hex'])
+#
+#                    if not found_issuance:
+#                        # to check certs revocations we can iterate this list in reverse!
+#                        data_after_issuance.append(data)
+#                    else:
+#                        # current issuance is actually the first element of this list!
+#                        # to check for addr revocations we can iterate this list as is
+#                        data_before_issuance.append(data)
+#
+#        if not found_issuance:
+#            raise ValueError("Txid for issuance not found in address' transactions")
+#
+#        results[key]['before'] = data_before_issuance
+#        results[key]['after'] = data_after_issuance
+#        results[key]['success'] = True
+#
+#    except Exception as e:
+#        # TODO log error -- print(e)
+#
+#        # don't break -- ignore result of this thread
+#        pass
+
+
+
+
 '''
-Uses a fully indexed bitcoin core node (txindex=1) to get all transactions of
-the address
+Uses a btcd node that contains address indexes (txindex=1, addrindex=1) to get
+all transactions of the address.
 '''
-def get_bitcoincore_op_return_hexes(address, txid, results, key, conf,
-                                    testnet=False):
+def get_btcd_op_return_hexes(address, txid, results, key, conf, testnet=False):
+
     try:
 
         url = conf['full_url']
-
         rpc_conn = AuthServiceProxy(url)
-        addr_txs = rpc_conn.listreceivedbyaddress(0, True, True, address)[0]['txids']
-
-        # create batch jsonrpc to get all the txs data for each txid above
-        get_tx_commands = [ [ "getrawtransaction", trans_id, True] for trans_id in addr_txs ]
-        all_unsorted_relevant_txs = rpc_conn.batch_(get_tx_commands)
-
-        # sort transactions with blocktime desc (i.e. newest first)
-        all_relevant_txs = sorted(all_unsorted_relevant_txs, key=lambda x:
-                                  hash(x['blocktime']), reverse=True)
+        all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
 
         data_before_issuance = []
         data_after_issuance = []
@@ -185,18 +240,4 @@ def get_bitcoincore_op_return_hexes(address, txid, results, key, conf,
 
         # don't break -- ignore result of this thread
         pass
-
-
-
-def get_op_return_data_from_script(script):
-    # when > 75 op_pushdata1 (4c) is used before length
-    if script.startswith('6a4c'):
-        # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte
-        # data length
-        ignore_hex_chars = 6
-    else:
-        # 2 for 1 byte op_return + 2 for 1 byte data length
-        ignore_hex_chars = 4
-
-    return script[ignore_hex_chars:]
 
