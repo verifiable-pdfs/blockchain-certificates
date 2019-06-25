@@ -87,17 +87,18 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |**Global**||
 |working_direcory|The working directory for issuing the certificates. All paths/files are always relative to this directory. Example: `/home/kostas/spring_2016_graduates`|
 |**PDF certificates related**||
-|graduates_csv_file|The name of the comma separated value file that contains individual information for each graduate. It is relative to `working_directory`. Example: `graduates.csv`|
+|csv_file|The name of the comma separated value file that contains individual information for each graduate. It is relative to `working_directory`. Example: `graduates.csv`|
 |certificates_directory|The directory were all the new certificates will be stored. It is recommended that this directory is always empty before running the script. If it doesn't exist it will be created. It is relative to `working_directory`. Example: `certificates`|
 |certificates_global_fields|An object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{ "fields": [ { "date": { "label": "Date", "order": 2, "hide": false, "value": "5 Dec 2016" } } ] }`|
 |issuer|The name of the issuer/institution. Example: `UNIVERSITY OF NEVERLAND`|
 |expiry_date|The date of expiry (if any) expressed in Unix Epoch / UTC. Example: `1553929397`|
 |**CSV file related**||
-|cert_names_csv_column|Specifies the header of the column to use to identify the certificate that the metadata are going to be inserted to. Note that the certificate file needs to start with the value of the column but it could be more complex. Obviously, it has to be unique for each row. It is typical to use a graduate identifier for this column. Given that `graduates_csv_file` contains a column with header `student_id` with all the student identifiers of the graduates an example value would be: `student_id`|
+|cert_names_csv_column|Specifies the header of the column to use to identify the certificate that the metadata are going to be inserted to. Note that the certificate file needs to start with the value of the column but it could be more complex. Obviously, it has to be unique for each row. It is typical to use a graduate identifier for this column. Given that `csv_file` contains a column with header `student_id` with all the student identifiers of the graduates an example value would be: `student_id`|
 |cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata` field for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata. Example: `{ "columns": [ { "student_name": { "label": "Student Name", "order": 1, "hide":false } } ] }`|
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
 |blockchain_services|Specify the validation services to use and how many successes required. Example (and default): `{ "services": [ {"blockcypher":{} } ], "required_successes": 1}`. Another service can be using a bitcoin btcd node: `... {"btcd": { "full_url": "http://user:password@127.0.0.1:18334" }} ...`|
+|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "dns": { "url": "http://kkarasavvas.com" } }|
 |**Revocation related**|Mutually exclusive options|
 |p|Specify the PDF certificates that we need to revoke.|
 |batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|

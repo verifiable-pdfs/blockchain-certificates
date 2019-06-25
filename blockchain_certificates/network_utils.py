@@ -89,7 +89,7 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
 
         while 'hasMore' in address_txs and address_txs['hasMore']:
             params['before'] = new_start_height
-            address_txs = requests.get(address_txs_url, params=params)
+            address_txs = requests.get(address_txs_url, params=params).json()
             new_start_height = address_txs['txs'][-1]['block_height']
             # results are newest first
             all_relevant_txs = all_relevant_txs + address_txs['txs']
@@ -241,3 +241,53 @@ def get_btcd_op_return_hexes(address, txid, results, key, conf, testnet=False):
         # don't break -- ignore result of this thread
         pass
 
+
+
+
+
+
+'''
+Check all issuer verification methods in parallel.
+'''
+def check_issuer_verification_methods(issuer_address,
+                                      issuer_verification):
+    methods = issuer_verification
+    threads_results = {list(m.keys())[0]:{ 'success':False } for m in methods}
+
+    # threads to call all functions/APIs simultaneously
+    threads = []
+    for m in methods:
+        name = list(m.keys())[0]
+        target = globals()["check_" + name + "_verification_method"]
+        thread = Thread(target=target, args=[issuer_address, threads_results, name,
+                                             m[name]])
+        thread.start()
+        threads.append(thread)
+
+    # execute threads
+    for t in threads:
+        t.join()
+
+    return threads_results
+
+
+'''
+Verify that issuing address exists in the issuer domain.
+Note that the end-user should confirm that the domain is indeed the issuers.
+'''
+def check_dns_verification_method(address, results, key, conf):
+    try:
+
+        domain = conf['url']
+        url = domain + "/cred.txt"
+        cred_txt_file = requests.get(url)
+
+        if cred_txt_file.status_code == 200:
+            if address in cred_txt_file.text:
+                results[key]['success'] = True
+
+    except Exception as e:
+        # TODO log error -- print(e)
+
+        # don't break -- ignore result of this thread
+        pass

@@ -36,6 +36,22 @@ def get_issuer_address(pdf_file):
 
 
 '''
+Gets issuer verification methods from pdf metadata; only available from pdf
+metadata version 1 onwards
+'''
+def get_issuer_verification(pdf_file):
+    pdf = PdfReader(pdf_file)
+    try:
+        version = pdf.Info.version
+        if(version == '1'):
+            issuer = json.loads( pdf.Info.issuer.decode() )
+            return issuer['identity']['verification']
+    except AttributeError:
+        raise ValueError("Could not find issuer address verification in pdf")
+
+
+
+'''
 Reads the chainpoint_proof metadata from the pdf file and then removes it
 '''
 def get_and_remove_chainpoint_proof(pdf_file):
@@ -171,17 +187,27 @@ def validate_certificates(conf, interactive=False):
                                                          conf.testnet,
                                                          json.loads(conf.blockchain_services))
                     if valid:
-                        # Check the issuer's validation methods
-                        # TODO
-                        #network_utils.validate_issuer(issuer_address, txid,
-                        #                      validation_services, testnet)
+                        issuer_address = get_issuer_address(cert)
+                        verify_issuer = get_issuer_verification(cert)
+
+                        # if valid then check issuer verification methods
+                        issuer_verification = None
+                        if verify_issuer:
+                            issuer_verification = \
+                                network_utils.check_issuer_verification_methods(issuer_address,
+                                                                                verify_issuer)
                         if interactive:
                             print('Certificate {} is valid!'.format(cert))
                             if reason:
                                 print("(" + reason + ")")
+                            if issuer_verification:
+                                for k, v in issuer_verification.items():
+                                    print("Issuer verification method:", k,
+                                          "->", v['success'])
                         else:
                             results_array.append({ "cert": cert, "status":
-                                                  "valid", "reason": reason })
+                                                  "valid", "reason": reason,
+                                                  "verification": issuer_verification })
                     else:
                         if interactive:
                             print('Certificate {} is _not_ valid!'.format(cert))

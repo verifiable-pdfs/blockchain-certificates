@@ -16,16 +16,18 @@ Expects certificates_directory with all the PDF certificates. The names of the
 certificates must begin with the column chosen in cert_names_csv_column.
 '''
 def add_metadata_only_to_pdf_certificates(conf, interactive=False):
-    graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
+    csv_file = os.path.join(conf.working_directory, conf.csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
     if interactive:
         print('\nConfigured values are:\n')
         print('working_directory:\t{}'.format(conf.working_directory))
-        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('csv_file:\t{}'.format(csv_file))
         print('certificates_directory:\t{}'.format(certificates_directory))
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.verify_issuer:
+            print('verify_issuer:\t\t{}'.format(conf.verify_issuer))
         if conf.expiry_date:
             print('expiry_date:\t\t{}'.format(conf.expiry_date))
         if conf.cert_metadata_columns:
@@ -55,7 +57,7 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
             error_str = "directory {} is empty".format(certificates_directory)
             raise ValueError(error_str)
 
-    data = _process_csv(graduates_csv_file) # TODO CLEAN, conf.certificates_global_fields)
+    data = _process_csv(csv_file) # TODO CLEAN, conf.certificates_global_fields)
     for cert_data in data:
         certificate_file = None
         # get file_id to use to get the appropriate certificate
@@ -71,6 +73,7 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
                                conf.cert_metadata_columns, cert_data,
                                conf.certificates_global_fields,
+                               conf.verify_issuer,
                                interactive)
         else:
             if interactive:
@@ -90,17 +93,19 @@ hashing.
 '''
 def populate_pdf_certificates(conf, interactive=False):
     pdf_cert_template_file = os.path.join(conf.working_directory, conf.pdf_cert_template_file)
-    graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
+    csv_file = os.path.join(conf.working_directory, conf.csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
     if interactive:
         print('\nConfigured values are:\n')
         print('working_directory:\t{}'.format(conf.working_directory))
         print('pdf_cert_template_file:\t{}'.format(pdf_cert_template_file))
-        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('csv_file:\t{}'.format(csv_file))
         print('certificates_directory:\t{}'.format(certificates_directory))
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.verify_issuer:
+            print('verify_issuer:\t\t{}'.format(conf.verify_issuer))
         if conf.expiry_date:
             print('expiry_date:\t\t{}'.format(conf.expiry_date))
         if conf.cert_metadata_columns:
@@ -114,7 +119,7 @@ def populate_pdf_certificates(conf, interactive=False):
     # create certs_dir if it does not exist
     os.makedirs(certificates_directory, exist_ok=True)
 
-    data = _process_csv(graduates_csv_file)
+    data = _process_csv(csv_file)
     for cert_data in data:
         # get name to use for cert name
         fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
@@ -124,7 +129,7 @@ def populate_pdf_certificates(conf, interactive=False):
 
         _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
                            conf.cert_metadata_columns, cert_data,
-                           conf.certificates_global_fields, interactive)
+                           conf.certificates_global_fields, conf.verify_issuer, interactive)
 
 
 def _process_csv(csv_file):
@@ -174,7 +179,7 @@ It then adds the required 'version', 'issuer' (name, identity) as well as an emp
 chainpoint_proof key.
 '''
 def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
-                       global_columns, interactive=False):
+                       global_columns, verify_issuer, interactive=False):
 
     # create version
     version = 1
@@ -184,7 +189,7 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
         "name": issuer,
         "identity": {
             "address": issuer_address,
-            "verification": []
+            "verification": json.loads(verify_issuer)['methods'] 
         }
     }
 
