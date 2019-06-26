@@ -67,11 +67,15 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
     issuing_pubkey = proxy.getaddressinfo(conf.issuing_address)['pubkey']
 
-    tx_inputs = [ TxInput(unspent[0]['txid'], unspent[0]['vout']) ]
-    input_amount = unspent[0]['amount']
+    tx_inputs = []
+    full_amount = 0
+    for utxo in unspent:
+        txin = TxInput(utxo['txid'], utxo['vout'])
+        tx_inputs.append(txin)
+        full_amount += utxo['amount']
 
     change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
-    change_output = TxOutput(input_amount, change_script_out)
+    change_output = TxOutput(full_amount, change_script_out)
 
     op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
     tx_outputs = [ change_output, op_return_output ]
@@ -93,7 +97,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
 
     # note results is sometimes in e- notation
-    change_amount = input_amount - (tx_fee / 100000000)
+    change_amount = full_amount - (tx_fee / 100000000)
 
     if(change_amount < 0):
         if interactive:

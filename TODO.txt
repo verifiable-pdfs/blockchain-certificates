@@ -1,8 +1,7 @@
 Technical
 - cleanup: update cert variables to cred (much later)
   . and also rename the repository to blockchain-credentials or CRED, etc. (much later)
-- implement as a library
-  . add appropriate (lib-specific) exceptions!
+- add appropriate (lib-specific) exceptions!
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout!
 - add testing (unit/system), e.g. with old certificates and past entries
@@ -24,12 +23,6 @@ Functionality
     . maybe also use sth like: https://github.com/Hipo/university-domains-list
   . phase 2: proper decentralized identity management (blockchain specific)
     . not really different than domain name and has issues with multiple revoke addresses (investigate)
-
-- when spending UTXOs... always spend all of them (eventually only 2 will exist) and send the change to the same address (test with dust limit as well... to ensure that it is spendable properly)
-
-NOTE
-- transactions acquired by the validator (for all services) need to have "change" to the issuer address to be picked up by listreceivedbyaddress
-  . for btcd this might not be needed
 
 FUTURE
 - could we register cred.txt as a .well-known URI through IANA? (requires wide adoption first!)
