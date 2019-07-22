@@ -76,7 +76,6 @@ validations per day
 def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=False):
 
     try:
-
         blockcypher_url = 'http://api.blockcypher.com/v1/btc'
         network = 'test3' if testnet else 'main'
 
@@ -98,6 +97,10 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
         data_after_issuance = []
         found_issuance = False
         for tx in all_relevant_txs:
+            # only consider txs that have at least one confirmation
+            if tx['confirmations'] <= 0:
+                continue
+
             # tx hash needs to be identical with txid from proof and that is the
             # actual issuance
             if tx['hash'] == txid:
@@ -209,6 +212,11 @@ def get_btcd_op_return_hexes(address, txid, results, key, conf, testnet=False):
         data_after_issuance = []
         found_issuance = False
         for tx in all_relevant_txs:
+            # only consider txs that have at least one confirmation
+            # note that tx will be None if confirmations is 0
+            if not tx['confirmations']:
+                continue
+
             # tx hash needs to be identical with txid from proof and that is the
             # actual issuance
             if tx['txid'] == txid:
