@@ -71,12 +71,24 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 ```
 
 ### Usage: `revoke-certificates`
-This script can be used to revoke certificates issued in the past. You can revoke either a complete batch of certificates by passing the transaction id of the issuance or you can revoke individual certificates by passing the PDF certificates themselves.
+This script can be used to revoke certificates issued in the past (or even issuing addresses - see below). You can revoke either a complete batch of certificates by passing the transaction id of the issuance or you can revoke individual certificates by passing the PDF certificates themselves.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
 ```
 $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2.pdf 
+```
+
+To revoke a complete batch (all certificates from a past issuance) you need to pass the txid:
+
+```
+$ revoke-certificates -c path/to/working_directory/config.ini -b 88b4ee67fc4fb8cfceaa5d1a4b4d7fa549d82b17868e64c0e578bc93e50c6053
+```
+
+In case the issuing address is compromised but you still have it you can revoke the issuing address. Any issuing or revoking after an address revocation is ignored. It will revoke the issuing_address from the configuration file:
+
+```
+$ revoke-certificates -c path/to/working_directory/config.ini -s
 ```
 
 
@@ -113,5 +125,5 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |issuer_identifier|It is possible to specify a value (max 8 bytes/chars) that is added in the OP_RETURN transaction to differentiate the issuer. It is optional. Example value: "UNicDC ".
 
 ## Example project to experiment
-The `sample_issue_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates and the index file. Just run the process again to add the metadata and issue the merkle root to the blockchain. Note that the sample `config.ini` needs to be updated with the path that the `sample_issue_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
+The `sample_issue_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates. Just run the process again to add the metadata and issue the merkle root to the blockchain. Note that the sample `config.ini` needs to be updated with the path that the `sample_issue_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
 
