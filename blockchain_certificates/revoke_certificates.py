@@ -8,7 +8,12 @@ import shutil
 import hashlib
 import binascii
 import configargparse
+
 from pdfrw import PdfReader, PdfWriter, PdfDict
+
+from bitcoinutils.setup import setup
+from bitcoinutils.keys import P2pkhAddress
+
 from blockchain_certificates import pdf_utils
 from blockchain_certificates import publish_hash
 from blockchain_certificates import cred_protocol
@@ -128,6 +133,27 @@ def revoke_batch(conf, interactive=False):
 
 
 '''
+Revoke an issuing address
+'''
+def revoke_address(conf, interactive=False):
+
+    # initialize full node connection
+    if(conf.testnet):
+        setup('testnet')
+    else:
+        setup('mainnet')
+
+    address = P2pkhAddress(conf.issuing_address).to_hash160()
+    op_return_bstring = cred_protocol.revoke_address_cmd(address)
+    revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
+    if interactive:
+        print('\nTx hash: {}'.format(revoked_txid))
+    else:
+        return revoked_txid
+
+
+
+'''
 Loads and returns the configuration options (either from --config or from
 specifying the specific options.
 '''
@@ -142,7 +168,7 @@ def load_config():
     p.add('-c', '--config', required=False, is_config_file=True, help='config file path')
 
     group = p.add_mutually_exclusive_group(required='True')
-    group.add_argument('-s', '--address', action='store_true', help='revoke the issuing_address')
+    group.add_argument('-s', '--address', action='store_true', help='revoke the issuing_address (from config file)')
     group.add_argument('-b', '--batch', type=str, help='revoke a whole batch identified by its transaction id')
     group.add_argument('-p', nargs='+', help='a list of certificate pdf files to revoke')
 
@@ -163,10 +189,8 @@ def revoke(conf, interactive=False):
 
     # check type of revocation and act accordingly
     if(conf.address):
-        if interactive:
-            print("Address revocation is not implemented yet!")
-        else:
-            raise NotImplementedError("Address revocation is not implemented yet!")
+        txid = revoke_address(conf, interactive)
+        return txid
     elif(conf.batch):
         txid = revoke_batch(conf, interactive)
         return txid

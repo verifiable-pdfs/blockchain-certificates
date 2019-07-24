@@ -3,7 +3,7 @@ Functions related to network services
 '''
 import requests
 from threading import Thread
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
+from bitcoinrpc.authproxy import AuthServiceProxy#, JSONRPCException
 
 
 '''

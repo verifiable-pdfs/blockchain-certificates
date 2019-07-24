@@ -8,6 +8,10 @@ import shutil
 import hashlib
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
+
+from bitcoinutils.setup import setup
+from bitcoinutils.keys import P2pkhAddress
+
 from blockchain_certificates import cred_protocol
 from blockchain_certificates import network_utils
 from blockchain_certificates import utils
@@ -110,9 +114,27 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     if not valid and not reason.startswith("certificate expired"):
         return False, reason
 
-    # check if cert or batch was revoked from oldest to newest; if a valid
-    # revoke address is found further commands are ignored
-    # (TODO: REVOKE ADDRESS CMD
+    # set bitcoin network (required for addr->pkh in revoke address)
+    if testnet:
+        setup('testnet')
+    else:
+        setup('mainnet')
+
+    # check if cert's issuance is after a revoke address cmd on that address
+    # and if yes then the issuance is invalid (address was revoked)
+    # we check before checking for cert revocations since if the issuance was
+    # after an address revocation it should show that as an invalid reason
+    # 0 index is the actual issuance -- ignore it
+    for i in range( len(data_before_issuance) )[1:] :
+        cred_dict = cred_protocol.parse_op_return_hex(data_before_issuance[i])
+        if cred_dict:
+            if cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
+                issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
+                if issuer_pkh == cred_dict['data']['pkh']:
+                    return False, "address was revoked"
+
+
+    # check if cert or batch was revoked from oldest to newest
     for op_return in reversed(data_after_issuance):
         cred_dict = cred_protocol.parse_op_return_hex(op_return)
         if cred_dict:
@@ -132,16 +154,11 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
                         if ripemd_hex == cred_dict['data']['hashes'][1]:
                             return False, "cert hash was revoked"
             elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
-                # if correct address and valid revoke then stop checking other
-                # revokes and break loop (TODO: REVOKE ADDRESS CMD)
-                if interactive:
-                    print("TODO: revoke address not implemented yet!")
-                else:
-                    raise NotImplementedError("revoke address is not implemented")
-
-    # check if cert's issuance is after a revoke address cmd on that address
-    # TODO: REVOKE ADDRESS CMD
-    # check the data_before_issuance...  and return False!!
+                # if address revocation is found stop looking since all other
+                # revocations will be invalid
+                issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
+                if issuer_pkh == cred_dict['data']['pkh']:
+                    break
 
     # if not revoked but not valid this means that it was expired; now that we
     # checked for revocations we can show the expiry error
