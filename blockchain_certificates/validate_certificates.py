@@ -221,7 +221,7 @@ def validate_certificates(conf, interactive=False):
                                 for k, v in issuer_verification.items():
                                     if k == "domain":
                                         print("Issuer verification method:", k,
-                                              "(", v['domain'], ")", "->", v['success'])
+                                              "(", v['url'], ")", "->", v['success'])
                                     else:
                                         print("Issuer verification method:", k, "->", v['success'])
                         else:

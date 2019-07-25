@@ -260,7 +260,7 @@ Check all issuer verification methods in parallel.
 def check_issuer_verification_methods(issuer_address,
                                       issuer_verification):
     methods = issuer_verification
-    threads_results = {list(m.keys())[0]:{ 'success':False, 'domain':None } for m in methods}
+    threads_results = {list(m.keys())[0]:{ 'success':False, 'url':None } for m in methods}
 
     # threads to call all functions/APIs simultaneously
     threads = []
@@ -291,7 +291,7 @@ def check_domain_verification_method(address, results, key, conf):
         cred_txt_file = requests.get(url)
 
         # set domain in results
-        results[key]['domain'] = domain
+        results[key]['url'] = domain
 
         if cred_txt_file.status_code == 200:
             if address in cred_txt_file.text:
