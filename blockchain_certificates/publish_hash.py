@@ -97,7 +97,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
 
     # note results is sometimes in e- notation
-    change_amount = full_amount - (tx_fee / 100000000)
+    change_amount = float(full_amount) - (tx_fee / 100000000)
 
     if(change_amount < 0):
         if interactive:

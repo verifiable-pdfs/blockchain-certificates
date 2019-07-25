@@ -17,7 +17,7 @@ setup(name='blockchain-certificates',
           "pdfrw==0.3",
           "fpdf==1.7.2",
           "configargparse==0.11.0",
-          "bitcoin-utils==0.3.2",
+          "bitcoin-utils==0.4.1",
           "python-bitcoinrpc==1.0",
           "merkletools==1.0.3"
       ],
