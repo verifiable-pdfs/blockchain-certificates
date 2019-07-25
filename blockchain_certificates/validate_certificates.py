@@ -219,8 +219,11 @@ def validate_certificates(conf, interactive=False):
                                 print("(" + reason + ")")
                             if issuer_verification:
                                 for k, v in issuer_verification.items():
-                                    print("Issuer verification method:", k,
-                                          "->", v['success'])
+                                    if k == "domain":
+                                        print("Issuer verification method:", k,
+                                              "(", v['domain'], ")", "->", v['success'])
+                                    else:
+                                        print("Issuer verification method:", k, "->", v['success'])
                         else:
                             results_array.append({ "cert": cert, "status":
                                                   "valid", "reason": reason,

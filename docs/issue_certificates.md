@@ -110,7 +110,7 @@ $ revoke-certificates -c path/to/working_directory/config.ini -s
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
 |blockchain_services|Specify the validation services to use and how many successes required. Example (and default): `{ "services": [ {"blockcypher":{} } ], "required_successes": 1}`. Another service can be using a bitcoin btcd node: `... {"btcd": { "full_url": "http://user:password@127.0.0.1:18334" }} ...`|
-|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "dns": { "url": "http://kkarasavvas.com" } }|
+|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "domain": { "url": "http://kkarasavvas.com" } }|
 |**Revocation related**|Mutually exclusive options|
 |p|Specify the PDF certificates that we need to revoke.|
 |batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|
