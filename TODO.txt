@@ -10,6 +10,7 @@ Technical
 - PDF plugin for validating from viewer
 - idea: adding url/qrcode on metadata for extra identification (as a second page to the pdf)!?
   . test if adding/removing pages in the pdf changes the hash!
+- PRIORITY - ADD exceptions to thread's results so that we know why something failed!!
 - ADD SEGWIT tx... for malleability fix (and cheaper txs)
 - ADD prerequisite of at least 3 confirmations per issuance and revocation, etc. ?
 

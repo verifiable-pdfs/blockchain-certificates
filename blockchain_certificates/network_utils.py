@@ -89,9 +89,13 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
         while 'hasMore' in address_txs and address_txs['hasMore']:
             params['before'] = new_start_height
             address_txs = requests.get(address_txs_url, params=params).json()
-            new_start_height = address_txs['txs'][-1]['block_height']
-            # results are newest first
-            all_relevant_txs = all_relevant_txs + address_txs['txs']
+            # this is required due to a bug in blockcypher where if it has 51
+            # txs it returns them all in the first request above but hasMore is
+            # still true thus breaks when we try to get [-1] of the empty list
+            if len(address_txs['txs']):
+                new_start_height = address_txs['txs'][-1]['block_height']
+                # results are newest first
+                all_relevant_txs = all_relevant_txs + address_txs['txs']
 
         data_before_issuance = []
         data_after_issuance = []
