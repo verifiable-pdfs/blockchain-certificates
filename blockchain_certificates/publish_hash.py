@@ -60,44 +60,51 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     # create transaction
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
-                     key=lambda x: hash(x['amount']), reverse=True)
+                     key=lambda x: x['amount'], reverse=False)
 
     if not unspent:
         raise ValueError("No UTXOs found")
 
     issuing_pubkey = proxy.getaddressinfo(conf.issuing_address)['pubkey']
 
+    tx = None
     tx_inputs = []
-    full_amount = 0
+    inputs_amount = 0
+
+    # coin selection: use smallest UTXO and if not enough satoshis add next
+    # smallest, etc. until sufficient tx fees are accumulated
     for utxo in unspent:
         txin = TxInput(utxo['txid'], utxo['vout'])
         tx_inputs.append(txin)
-        full_amount += utxo['amount']
+        inputs_amount += utxo['amount']
 
-    change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
-    change_output = TxOutput(full_amount, change_script_out)
+        change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
+        change_output = TxOutput(inputs_amount, change_script_out)
 
-    op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
-    tx_outputs = [ change_output, op_return_output ]
+        op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
+        tx_outputs = [ change_output, op_return_output ]
 
-    tx = Transaction(tx_inputs, tx_outputs)
+        tx = Transaction(tx_inputs, tx_outputs)
 
-    # sign transaction to get its size
-    r = proxy.signrawtransactionwithwallet(tx.serialize())
-    if r['complete'] == None:
-        if interactive:
-            sys.exit("Transaction couldn't be signed by node")
-        else:
-            raise RuntimeError("Transaction couldn't be signed by node")
+        # sign transaction to get its size
+        r = proxy.signrawtransactionwithwallet(tx.serialize())
+        if r['complete'] == None:
+            if interactive:
+                sys.exit("Transaction couldn't be signed by node")
+            else:
+                raise RuntimeError("Transaction couldn't be signed by node")
 
-    signed_tx = r['hex']
-    signed_tx_size = len(signed_tx)
+        signed_tx = r['hex']
+        signed_tx_size = len(signed_tx)
 
-    # calculate fees and change
-    tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
+        # calculate fees and change
+        tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
 
-    # note results is sometimes in e- notation
-    change_amount = float(full_amount) - (tx_fee / 100000000)
+        # note results is sometimes in e- notation
+        change_amount = float(inputs_amount) - (tx_fee / 100000000)
+
+        if change_amount >= 0:
+            break
 
     if(change_amount < 0):
         if interactive:
