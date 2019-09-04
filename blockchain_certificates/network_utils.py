@@ -1,6 +1,8 @@
 '''
 Functions related to network services
 '''
+import sys
+import queue
 import requests
 from threading import Thread
 from bitcoinrpc.authproxy import AuthServiceProxy#, JSONRPCException
@@ -15,6 +17,9 @@ def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
     services = blockchain_services['services']
     required_successes = blockchain_services['required_successes']
 
+    # instantiate a Queue to get thread exceptions
+    my_queue = queue.Queue()
+
     successes = 0
     threads_results = {list(s.keys())[0]:{'success':False, 'before':[], 'after':[]} for s in services}
     final_results = []
@@ -24,7 +29,7 @@ def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
     for s in services:
         name = list(s.keys())[0]
         target = globals()["get_" + name + "_op_return_hexes"]
-        thread = Thread(target=target, args=[address, txid, threads_results,
+        thread = Thread(target=target, args=[my_queue, address, txid, threads_results,
                                              name, s[name], testnet])
         thread.start()
         threads.append(thread)
@@ -32,6 +37,10 @@ def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
     # execute threads
     for t in threads:
         t.join()
+
+    thread_exceptions = []
+    while not my_queue.empty():
+        thread_exceptions.append(my_queue.get())
 
     # logic that makes sure that there is enough decentralization and
     # redundancy in the results; currently ensure that we have
@@ -48,10 +57,11 @@ def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
         if len(final_results) > 1:
             for i in range(1, len(final_results)):
                 if final_results[0] != final_results[i]:
-                    raise ValueError("API services produced different results")
+                    raise ValueError("API services produced different results",
+                                    thread_exceptions)
         return final_results[0]['before'], final_results[0]['after']
     else:
-        raise ValueError("Not enough API services results")
+        raise ValueError("Not enough API services results", thread_exceptions)
 
 
 
@@ -73,9 +83,10 @@ def get_op_return_data_from_script(script):
 Uses blockcypher's free API (note there is a limit of around a thousand
 validations per day
 '''
-def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=False):
+def get_blockcypher_op_return_hexes(queue, address, txid, results, key, conf, testnet=False):
 
     try:
+        #print("blockcypher start")
         blockcypher_url = 'http://api.blockcypher.com/v1/btc'
         network = 'test3' if testnet else 'main'
 
@@ -83,6 +94,10 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
 
         params = { 'limit': 50 }  # max tx per request on blockcypher
         address_txs = requests.get(address_txs_url, params=params).json()
+
+        if 'error' in address_txs:
+            raise ValueError(address_txs['error'])
+
         new_start_height = address_txs['txs'][-1]['block_height']
         all_relevant_txs = address_txs['txs']
 
@@ -132,11 +147,13 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
         results[key]['after'] = data_after_issuance
         results[key]['success'] = True
 
+        #print("blockcypher end")
     except Exception as e:
         # TODO log error -- print(e)
 
-        # don't break -- ignore result of this thread
-        pass
+        # add to queue to be visible to parent
+        queue.put(["Blockcypher Thread:", sys.exc_info()])
+        #print("blockcypher exception clause end")
 
 
 
@@ -204,10 +221,10 @@ def get_blockcypher_op_return_hexes(address, txid, results, key, conf, testnet=F
 Uses a btcd node that contains address indexes (txindex=1, addrindex=1) to get
 all transactions of the address.
 '''
-def get_btcd_op_return_hexes(address, txid, results, key, conf, testnet=False):
+def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=False):
 
     try:
-
+        #print("btcd start")
         url = conf['full_url']
         rpc_conn = AuthServiceProxy(url)
         all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
@@ -247,11 +264,14 @@ def get_btcd_op_return_hexes(address, txid, results, key, conf, testnet=False):
         results[key]['after'] = data_after_issuance
         results[key]['success'] = True
 
+        #print("btcd end")
+
     except Exception as e:
         # TODO log error -- print(e)
 
-        # don't break -- ignore result of this thread
-        pass
+        # add to queue to be visible to parent
+        queue.put(["Btcd Thread:", sys.exc_info()])
+        #print("btcd exception clause end")
 
 
 
