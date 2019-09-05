@@ -7,6 +7,9 @@ import requests
 from threading import Thread
 from bitcoinrpc.authproxy import AuthServiceProxy#, JSONRPCException
 
+import logging
+log = logging.getLogger( 'CRED Corelib' )
+
 
 '''
 Gets all the op_return hexes stored from the specified txid (used to issue the
@@ -149,7 +152,7 @@ def get_blockcypher_op_return_hexes(queue, address, txid, results, key, conf, te
 
         #print("blockcypher end")
     except Exception as e:
-        # TODO log error -- print(e)
+        log.error("Blockcypher Thread:" + sys.exc_info().__str__())
 
         # add to queue to be visible to parent
         queue.put(["Blockcypher Thread:", sys.exc_info()])
@@ -267,7 +270,7 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
         #print("btcd end")
 
     except Exception as e:
-        # TODO log error -- print(e)
+        log.error("Btcd Thread:" + sys.exc_info().__str__())
 
         # add to queue to be visible to parent
         queue.put(["Btcd Thread:", sys.exc_info()])
