@@ -212,7 +212,7 @@ def validate_certificates(conf, interactive=False):
                         if verify_issuer:
                             issuer_verification = \
                                 network_utils.check_issuer_verification_methods(issuer_address,
-                                                                                verify_issuer)
+                                                                                verify_issuer, conf.testnet)
                         if interactive:
                             print('Certificate {} is valid!'.format(cert))
                             if reason:

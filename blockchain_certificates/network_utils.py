@@ -285,7 +285,7 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
 Check all issuer verification methods in parallel.
 '''
 def check_issuer_verification_methods(issuer_address,
-                                      issuer_verification):
+                                      issuer_verification, testnet):
     methods = issuer_verification
     threads_results = {list(m.keys())[0]:{ 'success':False, 'url':None } for m in methods}
 
@@ -295,7 +295,7 @@ def check_issuer_verification_methods(issuer_address,
         name = list(m.keys())[0]
         target = globals()["check_" + name + "_verification_method"]
         thread = Thread(target=target, args=[issuer_address, threads_results, name,
-                                             m[name]])
+                                             m[name], testnet])
         thread.start()
         threads.append(thread)
 
@@ -310,7 +310,7 @@ def check_issuer_verification_methods(issuer_address,
 Verify that issuing address exists in the issuer domain.
 Note that the end-user should confirm that the domain is indeed the issuers.
 '''
-def check_domain_verification_method(address, results, key, conf):
+def check_domain_verification_method(address, results, key, conf, testnet):
     try:
 
         domain = conf['url']
@@ -323,6 +323,29 @@ def check_domain_verification_method(address, results, key, conf):
         if cred_txt_file.status_code == 200:
             if address in cred_txt_file.text:
                 results[key]['success'] = True
+
+    except Exception as e:
+        # TODO log error -- print(e)
+
+        # don't break -- ignore result of this thread
+        pass
+
+
+'''
+Verify that issuing address is managed by block.co.
+This means that the issuer name has been verified by block.co
+'''
+def check_block_co_verification_method(address, results, key, conf, testnet):
+    try:
+
+        if testnet:
+            url = 'https://test-api.block.co/auth/verify-address/{}/'.format(address)
+        else:
+            url = 'https://api.block.co/auth/verify-address/{}/'.format(address)
+        res = requests.get(url)
+
+        if res.status_code == 200:
+            results[key]['success'] = True
 
     except Exception as e:
         # TODO log error -- print(e)
