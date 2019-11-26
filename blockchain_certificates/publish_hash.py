@@ -73,6 +73,8 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
     # coin selection: use smallest UTXO and if not enough satoshis add next
     # smallest, etc. until sufficient tx fees are accumulated
+    # TODO wrt dust instead of adding another UTXO we should just remove the
+    # change_output and allocate the remaining (<546sats) to fees
     for utxo in unspent:
         txin = TxInput(utxo['txid'], utxo['vout'])
         tx_inputs.append(txin)
@@ -103,7 +105,11 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         # note results is sometimes in e- notation
         change_amount = float(inputs_amount) - (tx_fee / 100000000)
 
-        if change_amount >= 0:
+        # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
+        # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
+        # if change is less than 546 bytes that is considered dust (with the
+        # default node parameters) then include another UTXO
+        if change_amount >= 550:
             break
 
     if(change_amount < 0):
