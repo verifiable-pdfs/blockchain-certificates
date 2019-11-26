@@ -44,7 +44,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
             sys.exit()
 
     # test explicitly when non interactive
-    if interactive:
+    if not conf.full_node_rpc_password and interactive:
         conf.full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
 
     # initialize full node connection
@@ -60,37 +60,57 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     # create transaction
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
-                     key=lambda x: hash(x['amount']), reverse=True)
+                     key=lambda x: x['amount'], reverse=False)
+
+    if not unspent:
+        raise ValueError("No UTXOs found")
 
     issuing_pubkey = proxy.getaddressinfo(conf.issuing_address)['pubkey']
 
-    tx_inputs = [ TxInput(unspent[0]['txid'], unspent[0]['vout']) ]
-    input_amount = unspent[0]['amount']
+    tx = None
+    tx_inputs = []
+    inputs_amount = 0
 
-    change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
-    change_output = TxOutput(input_amount, change_script_out)
+    # coin selection: use smallest UTXO and if not enough satoshis add next
+    # smallest, etc. until sufficient tx fees are accumulated
+    # TODO wrt dust instead of adding another UTXO we should just remove the
+    # change_output and allocate the remaining (<546sats) to fees
+    for utxo in unspent:
+        txin = TxInput(utxo['txid'], utxo['vout'])
+        tx_inputs.append(txin)
+        inputs_amount += utxo['amount']
 
-    op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
-    tx_outputs = [ change_output, op_return_output ]
+        change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
+        change_output = TxOutput(inputs_amount, change_script_out)
 
-    tx = Transaction(tx_inputs, tx_outputs)
+        op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
+        tx_outputs = [ change_output, op_return_output ]
 
-    # sign transaction to get its size
-    r = proxy.signrawtransactionwithwallet(tx.serialize())
-    if r['complete'] == None:
-        if interactive:
-            sys.exit("Transaction couldn't be signed by node")
-        else:
-            raise RuntimeError("Transaction couldn't be signed by node")
+        tx = Transaction(tx_inputs, tx_outputs)
 
-    signed_tx = r['hex']
-    signed_tx_size = len(signed_tx)
+        # sign transaction to get its size
+        r = proxy.signrawtransactionwithwallet(tx.serialize())
+        if r['complete'] == None:
+            if interactive:
+                sys.exit("Transaction couldn't be signed by node")
+            else:
+                raise RuntimeError("Transaction couldn't be signed by node")
 
-    # calculate fees and change
-    tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
+        signed_tx = r['hex']
+        signed_tx_size = len(signed_tx)
 
-    # note results is sometimes in e- notation
-    change_amount = input_amount - (tx_fee / 100000000)
+        # calculate fees and change
+        tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
+
+        # note results is sometimes in e- notation
+        change_amount = float(inputs_amount) - (tx_fee / 100000000)
+
+        # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
+        # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
+        # if change is less than 546 bytes that is considered dust (with the
+        # default node parameters) then include another UTXO
+        if change_amount >= 550:
+            break
 
     if(change_amount < 0):
         if interactive:

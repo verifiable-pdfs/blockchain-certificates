@@ -76,9 +76,11 @@ def revoke_creds_cmd(txid, cred_hash1, cred_hash2=None):
 '''
 Creates CRED protocol's revoke address command
 '''
-#def revoke_address_cmd(address):
-#    string = _create_header() + operators['op_revoke_address'] + address
-#    return text_to_hex(string)
+def revoke_address_cmd(pkh):
+    bstring = (_create_header() + operators['op_revoke_address'] +
+               utils.hex_to_bytes(pkh))
+
+    return bstring
 
 
 '''
@@ -118,7 +120,7 @@ data:
   for op_issue_abs_expiry it has -> issuer_identifier, merkle_root, expiry
   for op_revoke_batch it has -> txid
   for op_revoke_creds it has -> txid, [hashes]
-  for op_revoke_address it has -> hash
+  for op_revoke_address it has -> pkh
 '''
 def parse_op_return_hex(hex_data):
     data_dict = {}
@@ -145,7 +147,7 @@ def parse_op_return_hex(hex_data):
             if len(hex_data) > 120:
                 data_dict['data']['hashes'].append(hex_data[120:160])
         elif data_dict['cmd'] == hex_op('op_revoke_address'):
-            data_dict['data']['hash'] = hex_data[16:56]
+            data_dict['data']['pkh'] = hex_data[16:56]
         else:
             return None
 

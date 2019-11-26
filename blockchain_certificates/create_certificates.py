@@ -58,16 +58,19 @@ def load_config():
     p.add_argument('-s', '--issuer', type=str, help='the name of the institution to (added in certificate metadata)')
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
     p.add_argument('-x', '--expiry_date', type=str, help='absolute expiry date up until the certificates will be valid')
-    p.add_argument('-v', '--graduates_csv_file', type=str, default='graduates.csv', help='the csv file with the graduate data')
+    p.add_argument('-v', '--csv_file', type=str, default='graduates.csv', help='the csv file with the awardees\' data')
     p.add_argument('-e', '--certificates_directory', type=str, default='certificates', help='the directory where the new certificates will be copied')
     p.add_argument('-g', '--certificates_global_fields', type=str, default='', help='certificates global fields expressed as JSON string')
     p.add_argument('-f', '--cert_names_csv_column', type=str, default='name', help='use this column from csv file for naming the certificates')
     p.add_argument('-m', '--cert_metadata_columns', type=str, default='name,degree,grade', help='the specified columns from the csv or global fields will be included as json metadata')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
+    p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-f', '--tx_fee_per_byte', type=int, default=100, help='the fee per transaction byte in satoshis')
     p.add_argument('-p', '--issuer_identifier', type=str, default='        ', help='optional 8 bytes identifier that represents the issuer intented to go on the blockchain')
+    p.add_argument('-r', '--verify_issuer', type=str, default='{ "methods": [] }',
+                   help='Which verification methods to use to validate the issuer')
     args, _ = p.parse_known_args()
     return args
 

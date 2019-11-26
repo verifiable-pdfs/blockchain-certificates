@@ -39,7 +39,7 @@ In addition to setting up the configuration file (consult the following section)
 __Pdf certificate template__
 :	This is the PDF certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduates (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
 
-__CSV graduates file__
+__CSV file__
 :	This is a CSV file that contains all the fields required to populate the certificate template. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the placeholder fields of the PDF template and fill them accordingly.
 
 ### Best Practices
@@ -54,7 +54,7 @@ working_directory
 ```
 
 ### Usage: `create-certificates`
-Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. The PDF metadata `metadata_object` is added to the PDF. It is a JSON object that always contains `issuer` and `issuer_address` as well as all the fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata `chainpoint_proof` in each PDF certificate. The compulsory metadata are `metadata_object`, and `chainpoint_proof`.
+Creates the certificates given a PDF template file and a CSV file that contains all the graduates; a PDF certificate is created for each entry in the CSV. The PDF metadata fields contain an `issuer` field with information about the issuer (name, Bitcoin address/identification). It also contains a `metadata` field which contains all the user-defined metadata fields specified in `cert_metadata_columns`. Following is the creation of a merkle tree that contains all the hashes of the certificates, the merkle root of which is published to the blockchain. A corresponding chainpoint receipt is added as metadata in the `chainpoint_proof` field in each PDF certificate. The compulsory metadata are `issuer`, and `chainpoint_proof`.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
@@ -75,12 +75,24 @@ $ validate-certificates -c path/to/working_directory/config.ini -f cert1.pdf cer
 ```
 
 ### Usage: `revoke-certificates`
-This script can be used to revoke certificates issued in the past. You can revoke either a complete batch of certificates by passing the transaction id of the issuance or you can revoke individual certificates by passing the PDF certificates themselves.
+This script can be used to revoke certificates issued in the past (or even issuing addresses - see below). You can revoke either a complete batch of certificates by passing the transaction id of the issuance or you can revoke individual certificates by passing the PDF certificates themselves.
 
 Given the example directory structure from above and a proper config.ini file it is as simple as:
 
 ```
 $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2.pdf 
+```
+
+To revoke a complete batch (all certificates from a past issuance) you need to pass the txid:
+
+```
+$ revoke-certificates -c path/to/working_directory/config.ini -b 88b4ee67fc4fb8cfceaa5d1a4b4d7fa549d82b17868e64c0e578bc93e50c6053
+```
+
+In case the issuing address is compromised but you still have it you can revoke the issuing address. Any issuing or revoking after an address revocation is ignored. It will revoke the issuing_address from the configuration file:
+
+```
+$ revoke-certificates -c path/to/working_directory/config.ini -s
 ```
 
 
@@ -92,16 +104,18 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |working_direcory|The working directory for issuing the certificates. All paths/files are always relative to this directory. Example: `/home/kostas/spring_2016_graduates`|
 |**PDF certificates related**||
 |pdf_cert_template|The name of the PDF template file relative to `working_directory`. Example: `certificate_template.pdf`|
-|graduates_csv_file|The name of the comma separated value file that contains individual information for each graduate. It is relative to `working_directory`. Example: `graduates.csv`|
+|csv_file|The name of the comma separated value file that contains individual information for each awardee. It is relative to `working_directory`. Example: `graduates.csv`|
 |certificates_directory|The directory were all the new certificates will be stored. It is recommended that this directory is always empty before running the script. If it doesn't exist it will be created. It is relative to `working_directory`. Example: `certificates`|
-|certificates_global_fields|A simple key-value object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{"date": "5 Dec 2016"}`|
+|certificates_global_fields|An object that contains data for the `pdf_cert_template` to fill in fields that are common to all graduates. Given that there is a field called `date ` for the date that the certificate was awarded an example would be: `{ "fields": [ { "date": { "label": "Date", "order": 2, "hide": false, "value": "5 Dec 2016" } } ] }`|
 |issuer|The name of the issuer/institution. Example: `UNIVERSITY OF NEVERLAND`|
 |expiry_date|The date of expiry (if any) expressed in Unix Epoch / UTC. Example: `1553929397`|
 |**CSV file related**||
-|cert_names_csv_column|Specifies the header of the column to use to name the certificates filenames. It has to be unique for each row or else the latter certificates will overrite the former! A good approach is to use a graduate identifier or their name. Given that `graduates_csv_file` contains a column with header `name` with all the (unique) names of the graduates an example value would be: `name`|
-|cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata_object` for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata.|
+|cert_names_csv_column|Specifies the header of the column to use to name the certificates filenames. It has to be unique for each row or else the latter certificates will overrite the former! A good approach is to use a graduate identifier or their name. Given that `csv_file` contains a column with header `name` with all the (unique) names of the graduates an example value would be: `name`|
+|cert_metadata_columns|Specifies the header of the columns and the respective data to be added in the `metadata` field for each individual certificate. Global fields, as specified by `certificates_global_fields` can also be specified here to be included in the metadata. Example: `{ "columns": [ { "student_name": { "label": "Student Name", "order": 1, "hide":false } } ] }`|
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
+|blockchain_services|Specify the validation services to use and how many successes required. Example (and default): `{ "services": [ {"blockcypher":{} } ], "required_successes": 1}`. Another service can be using a bitcoin btcd node: `... {"btcd": { "full_url": "http://user:password@127.0.0.1:18334" }} ...`|
+|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "domain": { "url": "http://kkarasavvas.com" } }|
 |**Revocation related**|Mutually exclusive options|
 |p|Specify the PDF certificates that we need to revoke.|
 |batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|
@@ -110,10 +124,11 @@ $ revoke-certificates -c path/to/working_directory/config.ini -p cert1.pdf cert2
 |issuing_address|The Bitcoin (testnet or mainnet) address to use for creating the OP_RETURN transaction that will issue the index document's hash in the blockchain. It should be a legacy address (for now) and to have sufficient funds to cover just the fees of the transaction. If more funds are present we send them back as change to the same address. Make sure that you have the private key for this address safe since that might be the only formal way of proving who issued the certificates. Example for testnet: `mgs9DLttzvWFkZ46YLSNKSZbgSNiMNUsdJ`|
 |full_node_url|The URL of the full node together with the port. Example for testnet: `127.0.0.1:18332`
 |full_node_rpc_user|The name of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `create-certificates` script. Example: `kostasnode`|
+|full_node_rpc_password|The password of the RPC user as configured in bitcoin.conf of the full node. Note that the RPC password is going to be asked during execution of the `create-certificates` script. Example: `kostastoolongtoguess`|
 |testnet|Specifies whether it will use testnet of mainnet to issue the hash. Example: `true`|
 |tx_fee_per_byte|Specifies the mining fee to use per byte of the transaction's size. Consult https://bitcoinfees.21.co or another site for possible values. Example value on Jan 2017 is: `100`|
 |issuer_identifier|It is possible to specify a value (max 8 bytes/chars) that is added in the OP_RETURN transaction to differentiate the issuer. It is optional. Example value: "UNicDC ".
 
 ## Example project to experiment
-The `sample_create_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates and the index file. Just delete the `certificates` directory and run the process again to create them. Note that the sample `config.ini` needs to be updated with the path that the `sample_create_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
+The `sample_create_certs_dir` directory in the root of the project contains everything needed to create the PDF certificates. Just delete the `certificates` directory and run the process again to create them. Note that the sample `config.ini` needs to be updated with the path that the `sample_create_certs_dir` is as well as with the proper Bitcoin address and RPC user name for the actual issuing. We recommend using testnet until you feel comfortable.
 

@@ -16,19 +16,24 @@ Expects certificates_directory with all the PDF certificates. The names of the
 certificates must begin with the column chosen in cert_names_csv_column.
 '''
 def add_metadata_only_to_pdf_certificates(conf, interactive=False):
-    graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
+    csv_file = os.path.join(conf.working_directory, conf.csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
     if interactive:
         print('\nConfigured values are:\n')
         print('working_directory:\t{}'.format(conf.working_directory))
-        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('csv_file:\t{}'.format(csv_file))
         print('certificates_directory:\t{}'.format(certificates_directory))
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.verify_issuer:
+            print('verify_issuer:\t\t{}'.format(conf.verify_issuer))
         if conf.expiry_date:
             print('expiry_date:\t\t{}'.format(conf.expiry_date))
-        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        if conf.cert_metadata_columns:
+            print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        if conf.certificates_global_fields:
+            print('certificates_global_fields:\t{}'.format(conf.certificates_global_fields))
         consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
         if not consent:
             sys.exit()
@@ -52,21 +57,23 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
             error_str = "directory {} is empty".format(certificates_directory)
             raise ValueError(error_str)
 
-    data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
+    data = _process_csv(csv_file) # TODO CLEAN, conf.certificates_global_fields)
     for cert_data in data:
         certificate_file = None
-        # get student_id to use to get the appropriate certificate
-        student_id = cert_data[conf.cert_names_csv_column]
-        # find PDF file that starts with student_id
+        # get file_id to use to get the appropriate certificate
+        file_id = cert_data[conf.cert_names_csv_column]
+        # find PDF file that starts with file_id
         for fp in cert_files:
             filename = os.path.basename(fp)
-            if os.path.isfile(fp) and filename.startswith(student_id):
+            if os.path.isfile(fp) and filename.startswith(file_id):
                 certificate_file = fp
                 break
 
         if certificate_file:
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
                                conf.cert_metadata_columns, cert_data,
+                               conf.certificates_global_fields,
+                               conf.verify_issuer,
                                interactive)
         else:
             if interactive:
@@ -86,20 +93,25 @@ hashing.
 '''
 def populate_pdf_certificates(conf, interactive=False):
     pdf_cert_template_file = os.path.join(conf.working_directory, conf.pdf_cert_template_file)
-    graduates_csv_file = os.path.join(conf.working_directory, conf.graduates_csv_file)
+    csv_file = os.path.join(conf.working_directory, conf.csv_file)
     certificates_directory = os.path.join(conf.working_directory, conf.certificates_directory)
     if interactive:
         print('\nConfigured values are:\n')
         print('working_directory:\t{}'.format(conf.working_directory))
         print('pdf_cert_template_file:\t{}'.format(pdf_cert_template_file))
-        print('graduates_csv_file:\t{}'.format(graduates_csv_file))
+        print('csv_file:\t{}'.format(csv_file))
         print('certificates_directory:\t{}'.format(certificates_directory))
         print('cert_names_csv_column:\t{}'.format(conf.cert_names_csv_column))
         print('issuer:\t\t\t{}'.format(conf.issuer))
         print('issuer_address:\t\t{}'.format(conf.issuing_address))
+        if conf.verify_issuer:
+            print('verify_issuer:\t\t{}'.format(conf.verify_issuer))
         if conf.expiry_date:
             print('expiry_date:\t\t{}'.format(conf.expiry_date))
-        print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        if conf.cert_metadata_columns:
+            print('cert_metadata_columns:\t{}'.format(conf.cert_metadata_columns))
+        if conf.certificates_global_fields:
+            print('certificates_global_fields:\t{}'.format(conf.certificates_global_fields))
         consent = input('Do you want to continue? [y/N]: ').lower() in ('y', 'yes')
         if not consent:
             sys.exit()
@@ -107,7 +119,7 @@ def populate_pdf_certificates(conf, interactive=False):
     # create certs_dir if it does not exist
     os.makedirs(certificates_directory, exist_ok=True)
 
-    data = _process_csv(graduates_csv_file, conf.certificates_global_fields)
+    data = _process_csv(csv_file)
     for cert_data in data:
         # get name to use for cert name
         fullname = cert_data[conf.cert_names_csv_column].replace(' ', '_')
@@ -116,10 +128,11 @@ def populate_pdf_certificates(conf, interactive=False):
         _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, interactive)
 
         _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
-                           conf.cert_metadata_columns, cert_data, interactive)
+                           conf.cert_metadata_columns, cert_data,
+                           conf.certificates_global_fields, conf.verify_issuer, interactive)
 
 
-def _process_csv(csv_file, global_fields_str):
+def _process_csv(csv_file):
     headers = []
     data =  []
     csv_data = csv.reader(open(csv_file))
@@ -131,11 +144,8 @@ def _process_csv(csv_file, global_fields_str):
         # add all csv columns/fields
         for i in range(len(headers)):
             field[headers[i]] = row[i]
-        # get global fields from json string and add to current field list
-        global_fields_json = json.loads(global_fields_str)
-        for k, v in global_fields_json.items():
-            field[k] = v
         data.append(field)
+
     return data
 
 
@@ -164,33 +174,51 @@ def _fill_pdf_form(fields, pdf_cert_template_file, out_file, interactive=False):
 
 '''
 Inserts standard metadata to a pdf certfificate. All CSV fields in 'data'
-are added as metadata to the JSON metadata_object. It then adds the
-required 'issuer' and 'issuer_address' as well as an empty
+and 'global_fields' are added as metadata to the JSON metadata pdf field.
+It then adds the required 'version', 'issuer' (name, identity) as well as an empty
 chainpoint_proof key.
 '''
-def _fill_pdf_metadata(out_file, issuer, issuer_address, columns, data,
-                       interactive=False):
-    # create metadata objest (json)
-    metadata_object = {}
-    metadata_fields = columns.split(",")
-    for md in metadata_fields:
-        if md in data:
-            metadata_object[md] = data[md]
+def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
+                       global_columns, verify_issuer, interactive=False):
 
-    # issuer and issuer_address used to go as separate metadata fields
-    # but now go to the metadata_object. They are still compulsory!
-    # The validator that reads metadata requires to look for issuer and
-    # issuer_address both in the metadata_object and if not found it has
-    # to look for them as separate metadata fields for backwards
-    # compatibility (certificates issued with v0.9.3 and before)
-    metadata_object['issuer'] = issuer
-    metadata_object['issuer_address'] = issuer_address
+    # create version
+    version = 1
+
+    # create issuer object (json)
+    issuer = {
+        "name": issuer,
+        "identity": {
+            "address": issuer_address,
+            "verification": json.loads(verify_issuer)['methods'] 
+        }
+    }
+
+    # create metadata object (json) and add metadata
+    metadata = {}
+
+    # add custom metadata
+    if column_fields:
+        metadata_fields = json.loads(column_fields)['columns']
+        for f in metadata_fields:
+            key = list(f)[0]
+            if key in data:
+                field_properties = f[key]
+                field_properties['value'] = data[key]
+                metadata[key] = field_properties
+
+    # add global field metadata
+    if global_columns:
+        global_fields = json.loads(global_columns)['fields']
+        for g in global_fields:
+            key = list(g)[0]
+            # note that global fields override column data
+            metadata[key] = g[key]
 
     # add the metadata
-    metadata = PdfDict(metadata_object=json.dumps(metadata_object),
-                       chainpoint_proof='')
+    pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer), metadata=json.dumps(metadata),
+                           chainpoint_proof='')
     pdf = PdfReader(out_file)
-    pdf.Info.update(metadata)
+    pdf.Info.update(pdf_metadata)
     PdfWriter().write(out_file, pdf)
 
     if interactive:

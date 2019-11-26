@@ -98,7 +98,7 @@ class ChainPointV2(object):
     '''
     # TODO consider using exceptions instead of (bool, text) tuples; this is
     # really only needed for valid but soon to expire
-    def validate_receipt(self, receipt, certificate_hash, issuer_identifier='', testnet=False):
+    def validate_receipt(self, receipt, op_return_hex, certificate_hash, issuer_identifier='', testnet=False):
         # check context and hash type
         if(receipt['@context'].lower() != CHAINPOINT_CONTEXT):
             return False, "wrong chainpoint context"
@@ -119,7 +119,7 @@ class ChainPointV2(object):
         txid = self.get_txid_from_receipt(receipt)
 
         # validate anchor
-        op_return_hex = network_utils.get_op_return_hex_from_blockchain(txid, testnet)
+        #op_return_hex = network_utils.get_op_return_hex_from_blockchain(txid, testnet)
 
         # ignore issuer_identifier for now (it is string in CRED but used to be
         # hex so we need a smart way to get it) -- TODO: obsolete it !!!
@@ -164,33 +164,6 @@ class ChainPointV2(object):
 
         return True, None
 
-
-
-
-#    def get_op_return_hex_from_blockchain(self, txid, testnet):
-#        # uses blockcypher API for now -- TODO: expand to consult multiple services
-#        if testnet:
-#            blockcypher_url = "https://api.blockcypher.com/v1/btc/test3/txs/" + txid
-#        else:
-#            blockcypher_url = "https://api.blockcypher.com/v1/btc/main/txs/" + txid
-#
-#        response = requests.get(blockcypher_url).json()
-#        outputs = response['outputs']
-#        hash_hex = ""
-#        for o in outputs:
-#            script = o['script']
-#            if script.startswith('6a'):
-#                # when > 75 op_pushdata1 (4c) is used before length
-#                if script.startswith('6a4c'):
-#                    # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
-#                    ignore_hex_chars = 6
-#                else:
-#                    # 2 for 1 byte op_return + 2 for 1 byte data length
-#                    ignore_hex_chars = 4
-#
-#                hash_hex = script[ignore_hex_chars:]
-#                break
-#        return hash_hex
 
 
     def get_txid_from_receipt(self, receipt):
