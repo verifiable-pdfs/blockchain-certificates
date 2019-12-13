@@ -17,6 +17,9 @@ from bitcoinutils.transactions import Transaction, TxInput, TxOutput
 from bitcoinutils.keys import P2pkhAddress
 from bitcoinutils.script import Script
 
+from decimal import Decimal
+
+
 
 '''
 Issues bytes to the Bitcoin's blockchain using OP_RETURN.
@@ -102,14 +105,15 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         # calculate fees and change
         tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
 
-        # note results is sometimes in e- notation
-        change_amount = float(inputs_amount) - (tx_fee / 100000000)
+        # TODO number_to_decimal8 is temporary here.. should used bitcoin
+        # library instead
+        change_amount = inputs_amount - number_to_decimal8(tx_fee / 100000000)
 
         # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
         # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
-        # if change is less than 546 bytes that is considered dust (with the
+        # if change is less than 546 satoshis that is considered dust (with the
         # default node parameters) then include another UTXO
-        if change_amount >= 550:
+        if change_amount >= 0.00000550:
             break
 
     if(change_amount < 0):
@@ -138,6 +142,13 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     tx_id = proxy.sendrawtransaction(signed_tx)
     return tx_id
 
+
+'''
+Convert from number (int/float) to Decimal with precision 8
+TODO this utility function should be provided/moved to the bitcoin library
+'''
+def number_to_decimal8(num):
+    return Decimal(num).quantize(Decimal('0.00000000'))
 
 
 '''
