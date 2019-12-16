@@ -7,16 +7,16 @@ This project allows an institution to issue digital certificates. It creates pdf
 
 More information on creating certificates:
 
-<https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/create_certificates.md>
+<https://github.com/verifiable-pdfs/blockchain-certificates/blob/master/docs/create_certificates.md>
 
 ****
 
 More information on issuing existing certificates:
 
-<https://github.com/UniversityOfNicosia/blockchain-certificates/blob/master/docs/issue_certificates.md>
+<https://github.com/verifiable-pdfs/blockchain-certificates/blob/master/docs/issue_certificates.md>
 
 *****
 
 More information on the CRED Protocol and it's implementation:
 
-<https://github.com/UniversityOfNicosia/blockchain-certificates/wiki>
+<https://github.com/verifiable-pdfs/blockchain-certificates/wiki>
