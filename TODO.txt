@@ -1,6 +1,4 @@
 Technical
-- cleanup: update cert variables to cred (much later)
-  . and also rename the repository to blockchain-credentials or CRED, etc. (much later)
 - add appropriate (lib-specific) exceptions!
 - add option to only create the pdfs (in the case of create-certificates) 
 - add logging throughout
@@ -8,6 +6,5 @@ Technical
 - ADD SEGWIT tx... for malleability fix (and cheaper txs)
 
 Other
-- ADD documentation for issuer identity and verirification methods in issue/create md files
 - could we register cred.txt as a .well-known URI through IANA? (requires wide adoption first!)
 
