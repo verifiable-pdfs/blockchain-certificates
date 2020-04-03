@@ -16,8 +16,7 @@ from bitcoinutils.proxy import NodeProxy
 from bitcoinutils.transactions import Transaction, TxInput, TxOutput
 from bitcoinutils.keys import P2pkhAddress
 from bitcoinutils.script import Script
-
-from decimal import Decimal
+from bitcoinutils.utils import decimal8
 
 
 
@@ -86,7 +85,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
         change_output = TxOutput(inputs_amount, change_script_out)
 
-        op_return_output = TxOutput(0, Script(['OP_RETURN', op_return_cert_protocol]))
+        op_return_output = TxOutput(decimal8(0), Script(['OP_RETURN', op_return_cert_protocol]))
         tx_outputs = [ change_output, op_return_output ]
 
         tx = Transaction(tx_inputs, tx_outputs)
@@ -107,7 +106,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
         # TODO number_to_decimal8 is temporary here.. should used bitcoin
         # library instead
-        change_amount = inputs_amount - number_to_decimal8(tx_fee / 100000000)
+        change_amount = inputs_amount - decimal8(tx_fee / 100000000)
 
         # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
         # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
@@ -141,14 +140,6 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
     tx_id = proxy.sendrawtransaction(signed_tx)
     return tx_id
-
-
-'''
-Convert from number (int/float) to Decimal with precision 8
-TODO this utility function should be provided/moved to the bitcoin library
-'''
-def number_to_decimal8(num):
-    return Decimal(num).quantize(Decimal('0.00000000'))
 
 
 '''
