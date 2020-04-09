@@ -135,8 +135,7 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
                                               blockchain_services, testnet)
 
     # validate receipt
-    valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier,
-                                        testnet)
+    valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier, testnet)
 
     # display error except when the certificate expired; this is because we want
     # revoked certificate error to be displayed before cert expired error
@@ -202,7 +201,7 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     if(get_version(tmp_filename) == '2'):
         owner, owner_proof = get_owner_and_remove_owner_proof(tmp_filename)
         # get public key
-        pk = PublicKey.from_hex(owner['pk'])
+        pk = PublicKey.from_hex(owner['owner_pk'])
         # get file hash
         sha256_hash = None
         with open(tmp_filename, 'rb' ) as pdf:
@@ -212,9 +211,11 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
         os.remove(tmp_filename)
 
         # finally check if owner signature is valid
-        print(pk.get_address().to_string(), pk.to_hex(), sha256_hash,
-              owner_proof)
-        if( not pk.verify(owner_proof, sha256_hash) ):
+        #print(pk.get_address().to_string(), pk.to_hex(), sha256_hash, owner_proof)
+        try:
+            if( pk.verify(owner_proof, sha256_hash) ):
+                pass
+        except Exception:   #BadSignatureError:
             return False, 'owner signature could not be validated'
 
     # in a valid credential the reason could contain an expiry date
