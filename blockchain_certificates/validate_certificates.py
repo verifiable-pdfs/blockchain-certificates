@@ -201,7 +201,7 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     if(get_version(tmp_filename) == '2'):
         owner, owner_proof = get_owner_and_remove_owner_proof(tmp_filename)
         # get public key
-        pk = PublicKey.from_hex(owner['owner_pk'])
+        pk = PublicKey.from_hex(owner['pk'])
         # get file hash
         sha256_hash = None
         with open(tmp_filename, 'rb' ) as pdf:
