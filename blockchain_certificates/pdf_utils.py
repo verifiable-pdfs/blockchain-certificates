@@ -8,6 +8,8 @@ import json
 import glob
 import hashlib
 from pdfrw import PdfReader, PdfWriter, PdfDict
+from bitcoinutils.setup import setup
+from bitcoinutils.proxy import NodeProxy
 
 
 '''
@@ -70,11 +72,12 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
                 break
 
         if certificate_file:
+            # TODO cleanup - passes full conf anyway to get user/pw for proxy node
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
                                conf.cert_metadata_columns, cert_data,
                                conf.certificates_global_fields,
                                conf.verify_issuer,
-                               interactive)
+                               conf, interactive)
         else:
             if interactive:
                 print('\nSkipping {}\n'.format(certificate_file))
@@ -127,9 +130,11 @@ def populate_pdf_certificates(conf, interactive=False):
 
         _fill_pdf_form(cert_data, pdf_cert_template_file, out_file, interactive)
 
+        # TODO cleanup - passes full conf anyway to get user/pw for proxy node
         _fill_pdf_metadata(out_file, conf.issuer, conf.issuing_address,
                            conf.cert_metadata_columns, cert_data,
-                           conf.certificates_global_fields, conf.verify_issuer, interactive)
+                           conf.certificates_global_fields, conf.verify_issuer,
+                           conf, interactive)
 
 
 def _process_csv(csv_file):
@@ -179,17 +184,17 @@ It then adds the required 'version', 'issuer' (name, identity) as well as an emp
 chainpoint_proof key.
 '''
 def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
-                       global_columns, verify_issuer, interactive=False):
+                       global_columns, verify_issuer, conf, interactive=False):
 
     # create version
-    version = 1
+    version = 2
 
     # create issuer object (json)
     issuer = {
         "name": issuer,
         "identity": {
             "address": issuer_address,
-            "verification": json.loads(verify_issuer)['methods'] 
+            "verification": json.loads(verify_issuer)['methods']
         }
     }
 
@@ -214,12 +219,61 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
             # note that global fields override column data
             metadata[key] = g[key]
 
+    # now look at special owner name/pubkey columns explicitly in code
+    #print(data['__OWNER_NAME__'], data['__OWNER_ADDRESS__'], data['__OWNER_PK__'])
+    owner_address = None
+    if '__OWNER_PK__' in data:
+        # TODO maybe just calculate from public key
+        owner_address = data['__OWNER_ADDRESS__']
+        owner = {
+            "name": data['__OWNER_NAME__'],
+            #"owner_address": data['__OWNER_ADDRESS__'], # TODO needed? - can be derived
+            "pk": data['__OWNER_PK__']
+        }
+    else:
+        owner = ''
+
+
     # add the metadata
-    pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer), metadata=json.dumps(metadata),
-                           chainpoint_proof='')
+    # TODO Should we add a single vpdf json object that is sorted and has the
+    # owner_proof? ..and keep chainpoint_proof separate
+    pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer),
+                           metadata=json.dumps(metadata),
+                           owner=json.dumps(owner), owner_proof='', chainpoint_proof='')
+
     pdf = PdfReader(out_file)
     pdf.Info.update(pdf_metadata)
     PdfWriter().write(out_file, pdf)
+
+    # hash pdf, sign hash message using node and add in owner_proof
+    # TODO !!!! IF owner && owner != ''
+    ## TODO CLEAN / REMOVE TIMING  check
+    ##import time
+    ##start = time.time()
+    sha256_hash = None
+    with open(out_file, 'rb' ) as pdf:
+        sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
+    if(conf.testnet):
+        setup('testnet')
+    else:
+        setup('mainnet')
+
+    host, port = conf.full_node_url.split(':')   # TODO: update when NodeProxy accepts full url!
+    proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
+                      host, port).get_proxy()
+
+    # does the wallet need unlocking??? walletpassphrase "pw" 30????
+    sig = proxy.signmessage(owner_address, sha256_hash)
+
+    # add owner_proof to metadata
+    pdf_metadata = PdfDict(owner_proof=sig)
+    pdf = PdfReader(out_file)
+    pdf.Info.update(pdf_metadata)
+    PdfWriter().write(out_file, pdf)
+
+    ##end = time.time()
+    ##print(end-start, " seconds")
+    ##exit()
 
     if interactive:
         # print progress

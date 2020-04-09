@@ -10,7 +10,7 @@ import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
 
 from bitcoinutils.setup import setup
-from bitcoinutils.keys import P2pkhAddress
+from bitcoinutils.keys import P2pkhAddress, PublicKey
 
 from blockchain_certificates import cred_protocol
 from blockchain_certificates import network_utils
@@ -19,16 +19,16 @@ from blockchain_certificates.chainpoint import ChainPointV2
 
 '''
 Gets issuer address from pdf metadata; requires backward compatibility using
-pdf metadata version
+vpdf metadata version
 '''
 def get_issuer_address(pdf_file):
     pdf = PdfReader(pdf_file)
     try:
         version = pdf.Info.version
-        if(version == '1'):
+        if(version == '1' or version == '2'):
             issuer = json.loads( pdf.Info.issuer.decode() )
             return issuer['identity']['address']
-        else:
+        else:           # older versions for backwards compatibility
             issuer_address = pdf.Info.issuer_address
             if issuer_address:
                 return issuer_address.decode()
@@ -41,17 +41,29 @@ def get_issuer_address(pdf_file):
 
 '''
 Gets issuer verification methods from pdf metadata; only available from pdf
-metadata version 1 onwards
+vpdf version 1 onwards
 '''
 def get_issuer_verification(pdf_file):
     pdf = PdfReader(pdf_file)
     try:
         version = pdf.Info.version
-        if(version == '1'):
+        if(version == '1' or version == '2'):
             issuer = json.loads( pdf.Info.issuer.decode() )
             return issuer['identity']['verification']
     except AttributeError:
         raise ValueError("Could not find issuer address verification in pdf")
+
+
+
+'''
+Gets vpdf version
+'''
+def get_version(pdf_file):
+    pdf = PdfReader(pdf_file)
+    try:
+        return pdf.Info.version
+    except AttributeError:
+        raise ValueError("Could not find version metadata in pdf")
 
 
 
@@ -68,6 +80,27 @@ def get_and_remove_chainpoint_proof(pdf_file):
     pdf.Info.update(metadata)
     PdfWriter().write(pdf_file, pdf)
     return proof
+
+
+'''
+Returns owner and owner_proof metadata from the pdf file and then removes it
+vpdf version 2 onwards
+'''
+def get_owner_and_remove_owner_proof(pdf_file):
+    pdf = PdfReader(pdf_file)
+    try:
+        version = pdf.Info.version
+        if(version == '2'):
+            owner = json.loads( pdf.Info.owner.decode() )
+            proof = pdf.Info.owner_proof.decode()
+        else:
+            return None, None
+    except AttributeError:
+        return None, None
+    metadata = PdfDict(owner_proof='')
+    pdf.Info.update(metadata)
+    PdfWriter().write(pdf_file, pdf)
+    return owner, proof
 
 
 '''
@@ -89,9 +122,6 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     filehash = ''
     with open(tmp_filename, 'rb') as pdf_file:
         filehash = hashlib.sha256(pdf_file.read()).hexdigest()
-
-    # cleanup now that we got original filehash
-    os.remove(tmp_filename)
 
     # instantiate chainpoint object
     cp = ChainPointV2()
@@ -164,6 +194,28 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     # checked for revocations we can show the expiry error
     if not valid:
         return False, reason
+
+    # now that the issuer (anchoring) was validated validate the certificate
+    # with the owner's public key (vpdf v2)
+
+    # get owner and owner_proof removing the latter
+    if(get_version(tmp_filename) == '2'):
+        owner, owner_proof = get_owner_and_remove_owner_proof(tmp_filename)
+        # get public key
+        pk = PublicKey.from_hex(owner['pk'])
+        # get file hash
+        sha256_hash = None
+        with open(tmp_filename, 'rb' ) as pdf:
+            sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
+
+        # cleanup now that we got original filehash
+        os.remove(tmp_filename)
+
+        # finally check if owner signature is valid
+        print(pk.get_address().to_string(), pk.to_hex(), sha256_hash,
+              owner_proof)
+        if( not pk.verify(owner_proof, sha256_hash) ):
+            return False, 'owner signature could not be validated'
 
     # in a valid credential the reason could contain an expiry date
     return True, reason
