@@ -45,6 +45,9 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         if not consent:
             sys.exit()
 
+    #import time
+    #start = time.time()
+
     # test explicitly when non interactive
     if not conf.full_node_rpc_password and interactive:
         conf.full_node_rpc_password = getpass.getpass('\nPlease enter the password for the node\'s RPC user: ')
@@ -139,6 +142,10 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
             sys.exit()
 
     tx_id = proxy.sendrawtransaction(signed_tx)
+
+    #end = time.time()
+    #print("publish_hash.issue_op_return()", end-start, " seconds")
+
     return tx_id
 
 

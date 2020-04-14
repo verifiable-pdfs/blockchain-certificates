@@ -72,12 +72,16 @@ def add_metadata_only_to_pdf_certificates(conf, interactive=False):
                 break
 
         if certificate_file:
+            #import time
+            #start = time.time()
             # TODO cleanup - passes full conf anyway to get user/pw for proxy node
             _fill_pdf_metadata(certificate_file, conf.issuer, conf.issuing_address,
                                conf.cert_metadata_columns, cert_data,
                                conf.certificates_global_fields,
                                conf.verify_issuer,
                                conf, interactive)
+            #end = time.time()
+            #print("_fill_pdf_metadata()", end-start, " seconds")
         else:
             if interactive:
                 print('\nSkipping {}\n'.format(certificate_file))
@@ -220,18 +224,22 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
             metadata[key] = g[key]
 
     # now look at special owner name/pubkey columns explicitly in code
+    # TODO FLAG in conf to USE MULTI-OWNER????? AAAAAAAAAAA
+    # TODO think validation efficiency... need to keep versioning? - probably yes
+    # TODO FLAG in conf to USE MULTI-OWNER????? AAAAAAAAAAA
     #print(data['__OWNER_NAME__'], data['__OWNER_ADDRESS__'], data['__OWNER_PK__'])
+    # TODO we should probably check at least the existence of a correctly sized
+    # public key?
+    owner = None
     owner_address = None
-    if '__OWNER_PK__' in data:
-        # TODO maybe just calculate from public key
+    if '__OWNER_PK__' in data and data['__OWNER_PK__'] and data['__OWNER_ADDRESS__']:
+        # TODO maybe just calculate address from public key?
         owner_address = data['__OWNER_ADDRESS__']
         owner = {
             "name": data['__OWNER_NAME__'],
             #"owner_address": data['__OWNER_ADDRESS__'], # TODO needed? - can be derived
             "pk": data['__OWNER_PK__']
         }
-    else:
-        owner = ''
 
 
     # add the metadata
@@ -245,35 +253,33 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
     pdf.Info.update(pdf_metadata)
     PdfWriter().write(out_file, pdf)
 
+    # if owner exists then need to add owner_proof
     # hash pdf, sign hash message using node and add in owner_proof
-    # TODO !!!! IF owner && owner != ''
-    ## TODO CLEAN / REMOVE TIMING  check
-    ##import time
-    ##start = time.time()
-    sha256_hash = None
-    with open(out_file, 'rb' ) as pdf:
-        sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
-    if(conf.testnet):
-        setup('testnet')
-    else:
-        setup('mainnet')
+    if owner:
+        ##import time
+        ##start = time.time()
+        sha256_hash = None
+        with open(out_file, 'rb' ) as pdf:
+            sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
+        if(conf.testnet):
+            setup('testnet')
+        else:
+            setup('mainnet')
 
-    host, port = conf.full_node_url.split(':')   # TODO: update when NodeProxy accepts full url!
-    proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
-                      host, port).get_proxy()
+        host, port = conf.full_node_url.split(':') #TODO: update when NodeProxy accepts full url!
+        proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
+                          host, port).get_proxy()
 
-    # does the wallet need unlocking??? walletpassphrase "pw" 30????
-    sig = proxy.signmessage(owner_address, sha256_hash)
+        sig = proxy.signmessage(owner_address, sha256_hash)
 
-    # add owner_proof to metadata
-    pdf_metadata = PdfDict(owner_proof=sig)
-    pdf = PdfReader(out_file)
-    pdf.Info.update(pdf_metadata)
-    PdfWriter().write(out_file, pdf)
-
-    ##end = time.time()
-    ##print(end-start, " seconds")
-    ##exit()
+        # add owner_proof to metadata
+        pdf_metadata = PdfDict(owner_proof=sig)
+        pdf = PdfReader(out_file)
+        pdf.Info.update(pdf_metadata)
+        PdfWriter().write(out_file, pdf)
+        ##end = time.time()
+        ##print(end-start, " seconds")
+        ##exit()
 
     if interactive:
         # print progress

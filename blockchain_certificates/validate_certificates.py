@@ -55,15 +55,15 @@ def get_issuer_verification(pdf_file):
 
 
 
-'''
-Gets vpdf version
-'''
-def get_version(pdf_file):
-    pdf = PdfReader(pdf_file)
-    try:
-        return pdf.Info.version
-    except AttributeError:
-        raise ValueError("Could not find version metadata in pdf")
+#'''
+#Gets vpdf version
+#'''
+#def get_version(pdf_file):
+#    pdf = PdfReader(pdf_file)
+#    try:
+#        return pdf.Info.version
+#    except AttributeError:
+#        raise ValueError("Could not find version metadata in pdf")
 
 
 
@@ -198,8 +198,8 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     # with the owner's public key (vpdf v2)
 
     # get owner and owner_proof removing the latter
-    if(get_version(tmp_filename) == '2'):
-        owner, owner_proof = get_owner_and_remove_owner_proof(tmp_filename)
+    owner, owner_proof = get_owner_and_remove_owner_proof(tmp_filename)
+    if owner:
         # get public key
         pk = PublicKey.from_hex(owner['pk'])
         # get file hash

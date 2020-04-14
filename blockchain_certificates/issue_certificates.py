@@ -99,7 +99,12 @@ def issue_certificates(conf, interactive=False):
                                                     cp.get_merkle_root())
 
     txid = publish_hash.issue_op_return(conf, op_return_bstring, interactive)
+
+    #import time
+    #start = time.time()
     insert_proof_to_certificates(conf, cp, txid, cert_files, interactive)
+    #end = time.time()
+    #print("insert_proof_to_certificates()", end-start, " seconds")
 
     return txid
 
