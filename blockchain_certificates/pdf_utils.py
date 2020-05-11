@@ -189,7 +189,7 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
         "name": issuer,
         "identity": {
             "address": issuer_address,
-            "verification": json.loads(verify_issuer)['methods'] 
+            "verification": json.loads(verify_issuer)['methods']
         }
     }
 
@@ -218,7 +218,10 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
     pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer), metadata=json.dumps(metadata),
                            chainpoint_proof='')
     pdf = PdfReader(out_file)
-    pdf.Info.update(pdf_metadata)
+    if pdf.Info:
+        pdf.Info.update(pdf_metadata)
+    else:
+        pdf.Info = pdf_metadata
     PdfWriter().write(out_file, pdf)
 
     if interactive:
