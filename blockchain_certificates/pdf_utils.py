@@ -10,6 +10,7 @@ import hashlib
 from pdfrw import PdfReader, PdfWriter, PdfDict
 from bitcoinutils.setup import setup
 from bitcoinutils.proxy import NodeProxy
+from bitcoinutils.keys import PublicKey
 
 
 '''
@@ -224,33 +225,38 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
             metadata[key] = g[key]
 
     # now look at special owner name/pubkey columns explicitly in code
-    # TODO FLAG in conf to USE MULTI-OWNER????? AAAAAAAAAAA
-    # TODO think validation efficiency... need to keep versioning? - probably yes
-    # TODO FLAG in conf to USE MULTI-OWNER????? AAAAAAAAAAA
-    #print(data['__OWNER_NAME__'], data['__OWNER_ADDRESS__'], data['__OWNER_PK__'])
-    # TODO we should probably check at least the existence of a correctly sized
-    # public key?
+    # TODO we should probably check if the public key is valid
+    print(data['__OWNER_NAME__'], data['__OWNER_ADDRESS__'], data['__OWNER_PK__'])
     owner = None
     owner_address = None
+    owner_pk = None
     if '__OWNER_PK__' in data and data['__OWNER_PK__'] and data['__OWNER_ADDRESS__']:
         # TODO maybe just calculate address from public key?
         owner_address = data['__OWNER_ADDRESS__']
+        owner_pk = data['__OWNER_PK__']
+
         owner = {
             "name": data['__OWNER_NAME__'],
             #"owner_address": data['__OWNER_ADDRESS__'], # TODO needed? - can be derived
-            "pk": data['__OWNER_PK__']
+            "pk": owner_pk
         }
 
+        # add the metadata
+        pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer),
+                               metadata=json.dumps(metadata),
+                               owner=json.dumps(owner), owner_proof='', chainpoint_proof='')
+    else:
+        # add the metadata (without dumps(owner) to keep owner empty)
+        pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer),
+                               metadata=json.dumps(metadata),
+                               owner='', owner_proof='', chainpoint_proof='')
 
-    # add the metadata
-    # TODO Should we add a single vpdf json object that is sorted and has the
-    # owner_proof? ..and keep chainpoint_proof separate
-    pdf_metadata = PdfDict(version=version, issuer=json.dumps(issuer),
-                           metadata=json.dumps(metadata),
-                           owner=json.dumps(owner), owner_proof='', chainpoint_proof='')
 
     pdf = PdfReader(out_file)
-    pdf.Info.update(pdf_metadata)
+    if pdf.Info:
+        pdf.Info.update(pdf_metadata)
+    else:
+        pdf.Info = pdf_metadata
     PdfWriter().write(out_file, pdf)
 
     # if owner exists then need to add owner_proof
@@ -269,6 +275,16 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
         host, port = conf.full_node_url.split(':') #TODO: update when NodeProxy accepts full url!
         proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
                           host, port).get_proxy()
+
+        # Due to an old unresolved issue still pending in Bitcoin v0.20.0
+        # signmessage does not support signing with bech32 key.
+        # To resolve we use the public key to get the base58check encoding that
+        # signmessage is happy with so that we can sign!
+        if (owner_address.startswith('bc') or owner_address.startswith('tb')):
+            owner_address = PublicKey(owner_pk).get_address().to_string()
+
+        # NOTE that address (the encoding) might have changed here from bech32
+        # to legacy... take care if you use it again in this function!
 
         sig = proxy.signmessage(owner_address, sha256_hash)
 

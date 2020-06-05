@@ -14,9 +14,9 @@ import configargparse
 from bitcoinutils.setup import setup
 from bitcoinutils.proxy import NodeProxy
 from bitcoinutils.transactions import Transaction, TxInput, TxOutput
-from bitcoinutils.keys import P2pkhAddress
+from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress
 from bitcoinutils.script import Script
-from bitcoinutils.utils import decimal8
+from bitcoinutils.utils import to_satoshis
 
 
 
@@ -62,6 +62,12 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
     proxy = NodeProxy(conf.full_node_rpc_user, conf.full_node_rpc_password,
                       host, port).get_proxy()
 
+    # checks if address is native segwit or not.
+    is_address_bech32 = False
+    if (conf.issuing_address.startswith('bc') or
+            conf.issuing_address.startswith('tb')):
+        is_address_bech32 = True
+
     # create transaction
     tx_outputs = []
     unspent = sorted(proxy.listunspent(1, 9999999, [conf.issuing_address]),
@@ -85,13 +91,20 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         tx_inputs.append(txin)
         inputs_amount += utxo['amount']
 
-        change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
-        change_output = TxOutput(inputs_amount, change_script_out)
+        # currently bitcoin lib requires explicit instantiation; made method to
+        # check this; update if/when the library fixes/automates this
+        change_script_out = None
+        if is_address_bech32:
+            change_script_out = P2wpkhAddress(conf.issuing_address).to_script_pub_key()
+        else:
+            change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
 
-        op_return_output = TxOutput(decimal8(0), Script(['OP_RETURN', op_return_cert_protocol]))
+        change_output = TxOutput(to_satoshis(inputs_amount), change_script_out)
+
+        op_return_output = TxOutput(to_satoshis(0), Script(['OP_RETURN', op_return_cert_protocol]))
         tx_outputs = [ change_output, op_return_output ]
 
-        tx = Transaction(tx_inputs, tx_outputs)
+        tx = Transaction(tx_inputs, tx_outputs, has_segwit=is_address_bech32)
 
         # sign transaction to get its size
         r = proxy.signrawtransactionwithwallet(tx.serialize())
@@ -102,20 +115,18 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
                 raise RuntimeError("Transaction couldn't be signed by node")
 
         signed_tx = r['hex']
-        signed_tx_size = len(signed_tx)
+        signed_tx_size = proxy.decoderawtransaction(signed_tx)['vsize']
 
-        # calculate fees and change
-        tx_fee = (signed_tx_size // 2 + 1) * conf.tx_fee_per_byte
+        # calculate fees and change in satoshis
+        tx_fee = signed_tx_size * conf.tx_fee_per_byte
 
-        # TODO number_to_decimal8 is temporary here.. should used bitcoin
-        # library instead
-        change_amount = inputs_amount - decimal8(tx_fee / 100000000)
+        change_amount = to_satoshis(inputs_amount) - tx_fee
 
         # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
         # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
         # if change is less than 546 satoshis that is considered dust (with the
         # default node parameters) then include another UTXO
-        if change_amount >= 0.00000550:
+        if change_amount >= 550:
             break
 
     if(change_amount < 0):

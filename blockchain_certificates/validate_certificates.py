@@ -91,7 +91,7 @@ def get_owner_and_remove_owner_proof(pdf_file):
     try:
         version = pdf.Info.version
         if(version == '2'):
-            owner = json.loads( pdf.Info.owner.decode() )
+            owner = pdf.Info.owner.decode()
             proof = pdf.Info.owner_proof.decode()
         else:
             return None, None
@@ -100,6 +100,9 @@ def get_owner_and_remove_owner_proof(pdf_file):
     metadata = PdfDict(owner_proof='')
     pdf.Info.update(metadata)
     PdfWriter().write(pdf_file, pdf)
+    if proof:
+        owner = json.loads(owner)
+
     return owner, proof
 
 
