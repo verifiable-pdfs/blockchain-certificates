@@ -226,18 +226,17 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
 
     # now look at special owner name/pubkey columns explicitly in code
     # TODO we should probably check if the public key is valid
-    print(data['__OWNER_NAME__'], data['__OWNER_ADDRESS__'], data['__OWNER_PK__'])
     owner = None
     owner_address = None
     owner_pk = None
-    if '__OWNER_PK__' in data and data['__OWNER_PK__'] and data['__OWNER_ADDRESS__']:
+    if '__OWNER_PK__' in data and data['__OWNER_PK__'] and '__OWNER_ADDRESS__' in data and data['__OWNER_ADDRESS__']:
         # TODO maybe just calculate address from public key?
         owner_address = data['__OWNER_ADDRESS__']
         owner_pk = data['__OWNER_PK__']
 
         owner = {
             "name": data['__OWNER_NAME__'],
-            #"owner_address": data['__OWNER_ADDRESS__'], # TODO needed? - can be derived
+            "owner_address": data['__OWNER_ADDRESS__'], # TODO needed? - can be derived
             "pk": owner_pk
         }
 
