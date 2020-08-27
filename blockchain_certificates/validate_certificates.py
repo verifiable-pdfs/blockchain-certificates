@@ -250,8 +250,8 @@ def load_config():
 def validate_certificates(conf, interactive=False):
     if len( conf.f ) >= 1:
         certificates = conf.f
+        results_array = []
         for cert in certificates:
-            results_array = []
             if os.path.isfile(cert):
                 filename = os.path.basename(cert)
                 if(filename.lower().endswith('.pdf')):
