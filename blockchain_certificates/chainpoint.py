@@ -15,7 +15,7 @@ CHAINPOINT_HASH_TYPES = {'sha224': 'ChainpointSHA224v2',
                          'sha3_256': 'ChainpointSHA3-256v2',
                          'sha3_384': 'ChainpointSHA3-384v2',
                          'sha3_512': 'ChainpointSHA3-512v2' }
-CHAINPOINT_ANCHOR_TYPES = {'btc': 'BTCOpReturn'} #, 'eth': 'ETHData'}
+CHAINPOINT_ANCHOR_TYPES = {'bitcoin': 'BTCOpReturn', 'litecoin': 'LTCOpReturn'} #, 'eth': 'ETHData'}
 
 '''
 Implements chainpoint v2 proof of existence approach
@@ -66,9 +66,9 @@ class ChainPointV2(object):
 
     '''
     Returns the chainpoint v2 blockchain receipt for specific leaf
-    Currently only works for BTC anchors
+    Currently only works for bitcoin and litecoin anchors
     '''
-    def get_receipt(self, index, btc_source_id):
+    def get_receipt(self, index, source_id, chain_type):
         if self.get_tree_ready_state():
             return {
                 "@context": CHAINPOINT_CONTEXT,
@@ -78,8 +78,8 @@ class ChainPointV2(object):
                 "proof": self.get_proof(index),
                 "anchors": [
                     {
-                        "type": "BTCOpReturn",
-                        "sourceId": btc_source_id
+                        "type": CHAINPOINT_ANCHOR_TYPES[chain_type],
+                        "sourceId": source_id
                     }
                 ]
             }

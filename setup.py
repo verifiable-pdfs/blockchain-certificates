@@ -17,10 +17,14 @@ setup(name='blockchain-certificates',
           "pdfrw==0.3",
           "fpdf==1.7.2",
           "configargparse==0.11.0",
+          "merkletools==1.0.3",
           "bitcoin-utils==0.4.7",
           "litecoin-utils==0.4.8",
-          "python-bitcoinrpc==1.0",
-          "merkletools==1.0.3"
+          #"python-bitcoinrpc==1.0", #installed from bitcoin-utils
+          # install litecoinrpc since it is not auto install from litecoin-utils
+          # probably because wheel does not exist; because does not work on git
+          # repos. Could later clone litecoinrpc and put it in pypi myself
+          "litecoinrpc @ git+git://github.com/bitwyre/python-litecoinrpc@f9deb63"
       ],
       package_data={
           'blockchain_certificates': ['requirements.txt',

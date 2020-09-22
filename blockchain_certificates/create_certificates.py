@@ -22,7 +22,7 @@ def insert_proof_to_certificates(conf, cp, txid, cert_files, interactive=False):
     if interactive:
         print('')
     for ind, val in enumerate(cert_files):
-        proof = json.dumps( cp.get_receipt(ind, txid) )
+        proof = json.dumps( cp.get_receipt(ind, txid, conf.blockchain) )
         metadata = PdfDict(chainpoint_proof=proof)
         pdf = PdfReader(val)
         pdf.Info.update(metadata)
@@ -66,6 +66,7 @@ def load_config():
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
+    p.add_argument('-l', '--blockchain', type=str, default='bitcoin', help='choose blockchain; currently bitcoin or litecoin')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-f', '--tx_fee_per_byte', type=int, default=100, help='the fee per transaction byte in satoshis')
     p.add_argument('-p', '--issuer_identifier', type=str, default='        ', help='optional 8 bytes identifier that represents the issuer intented to go on the blockchain')

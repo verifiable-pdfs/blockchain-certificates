@@ -22,7 +22,7 @@ def insert_proof_to_certificates(conf, cp, txid, cert_files, interactive=False):
     if interactive:
         print('')
     for ind, val in enumerate(cert_files):
-        proof = json.dumps( cp.get_receipt(ind, txid) )
+        proof = json.dumps( cp.get_receipt(ind, txid, conf.blockchain) )
         metadata = PdfDict(chainpoint_proof=proof)
         pdf = PdfReader(val)
         pdf.Info.update(metadata)

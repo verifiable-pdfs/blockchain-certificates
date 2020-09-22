@@ -11,19 +11,29 @@ import getpass
 import binascii
 import configargparse
 
-from bitcoinutils.setup import setup
-from bitcoinutils.proxy import NodeProxy
-from bitcoinutils.transactions import Transaction, TxInput, TxOutput
-from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress
-from bitcoinutils.script import Script
-from bitcoinutils.utils import to_satoshis
-
 
 
 '''
 Issues bytes to the Bitcoin's blockchain using OP_RETURN.
 '''
 def issue_op_return(conf, op_return_bstring, interactive=False):
+
+    # load apropriate blockchain libraries
+    if(conf.blockchain == 'litecoin'):
+        from litecoinutils.setup import setup
+        from litecoinutils.proxy import NodeProxy
+        from litecoinutils.transactions import Transaction, TxInput, TxOutput
+        from litecoinutils.keys import P2pkhAddress, P2wpkhAddress
+        from litecoinutils.script import Script
+        from litecoinutils.utils import to_satoshis
+    else:
+        from bitcoinutils.setup import setup
+        from bitcoinutils.proxy import NodeProxy
+        from bitcoinutils.transactions import Transaction, TxInput, TxOutput
+        from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress
+        from bitcoinutils.script import Script
+        from bitcoinutils.utils import to_satoshis
+
 
     op_return_hex = binascii.hexlify(op_return_bstring).decode()
 
@@ -65,13 +75,13 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
     # checks if address is native segwit or not.
     is_address_bech32 = False
-    if (conf.blockchain == 'bitcoin'):
-        if (conf.issuing_address.startswith('bc') or
-                conf.issuing_address.startswith('tb')):
-            is_address_bech32 = True
-    else:
+    if (conf.blockchain == 'litecoin'):
         if (conf.issuing_address.startswith('ltc') or
                 conf.issuing_address.startswith('tltc')):
+            is_address_bech32 = True
+    else:
+        if (conf.issuing_address.startswith('bc') or
+                conf.issuing_address.startswith('tb')):
             is_address_bech32 = True
 
     # create transaction
@@ -157,10 +167,6 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         consent = input('Do you want to issue on the blockchain? [y/N]: ').lower() in ('y', 'yes')
         if not consent:
             sys.exit()
-
-    print('change amount', change_amount)
-    print('signed_tx', signed_tx)
-    exit()
 
     tx_id = proxy.sendrawtransaction(signed_tx)
 
