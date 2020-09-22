@@ -31,6 +31,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         print('\nConfigured values are:\n')
         print('working_directory:\t{}'.format(conf.working_directory))
         print('issuing_address:\t{}'.format(conf.issuing_address))
+        print('blockchain:\t\t{}'.format(conf.blockchain))
         print('full_node_url:\t\t{}'.format(conf.full_node_url))
         print('full_node_rpc_user:\t{}'.format(conf.full_node_rpc_user))
         print('testnet:\t\t{}'.format(conf.testnet))
@@ -64,9 +65,14 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
     # checks if address is native segwit or not.
     is_address_bech32 = False
-    if (conf.issuing_address.startswith('bc') or
-            conf.issuing_address.startswith('tb')):
-        is_address_bech32 = True
+    if (conf.blockchain == 'bitcoin'):
+        if (conf.issuing_address.startswith('bc') or
+                conf.issuing_address.startswith('tb')):
+            is_address_bech32 = True
+    else:
+        if (conf.issuing_address.startswith('ltc') or
+                conf.issuing_address.startswith('tltc')):
+            is_address_bech32 = True
 
     # create transaction
     tx_outputs = []
@@ -122,8 +128,8 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
         change_amount = to_satoshis(inputs_amount) - tx_fee
 
-        # the default Bitcoin Core node doesn't allow the creation of dust UTXOs
-        # https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
+        # the default Bitcoin (and litecoin) Core node doesn't allow the creation of dust 
+        # UTXOs https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
         # if change is less than 546 satoshis that is considered dust (with the
         # default node parameters) then include another UTXO
         if change_amount >= 550:
@@ -152,6 +158,10 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         if not consent:
             sys.exit()
 
+    print('change amount', change_amount)
+    print('signed_tx', signed_tx)
+    exit()
+
     tx_id = proxy.sendrawtransaction(signed_tx)
 
     #end = time.time()
@@ -171,6 +181,7 @@ def load_config():
     p.add('-c', '--config', required=False, is_config_file=True, help='config file path')
     p.add_argument('-d', '--working_directory', type=str, default='.', help='the main working directory - all paths/files are relative to this')
     p.add_argument('-a', '--issuing_address', type=str, help='the issuing address with enough funds for the transaction; assumed to be imported in local node wallet')
+    p.add_argument('-l', '--blockchain', type=str, default='bitcoin', help='choose blockchain; currently bitcoin or litecoin')
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
