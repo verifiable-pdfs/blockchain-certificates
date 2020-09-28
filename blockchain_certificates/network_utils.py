@@ -5,7 +5,8 @@ import sys
 import queue
 import requests
 from threading import Thread
-from bitcoinrpc.authproxy import AuthServiceProxy#, JSONRPCException
+import bitcoinrpc.authproxy as btcproxy
+import litecoinrpc.authproxy as ltcproxy
 
 import logging
 log = logging.getLogger( 'CRED Corelib' )
@@ -16,7 +17,8 @@ Gets all the op_return hexes stored from the specified txid (used to issue the
 certificates. Get tx before issuance (for checking revoked addresses) and after
 issuance (for checking revoked batches and/or certificates
 '''
-def get_all_op_return_hexes(address, txid, blockchain_services, testnet=False):
+def get_all_op_return_hexes(address, txid, blockchain_services, chain, testnet=False):
+
     services = blockchain_services['services']
     required_successes = blockchain_services['required_successes']
 
@@ -228,7 +230,7 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
     try:
         #print("btcd start")
         url = conf['full_url']
-        rpc_conn = AuthServiceProxy(url)
+        rpc_conn = btcproxy.AuthServiceProxy(url)
         all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
 
         data_before_issuance = []
@@ -274,6 +276,65 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
         # add to queue to be visible to parent
         queue.put(["Btcd Thread:", sys.exc_info()])
         #print("btcd exception clause end")
+
+
+
+
+'''
+Uses a ltcd node that contains address indexes (txindex=1, addrindex=1) to get
+all transactions of the address.
+'''
+def get_ltcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=False):
+
+    try:
+        #print("ltcd start")
+        url = conf['full_url']
+        rpc_conn = ltcproxy.AuthServiceProxy(url)
+        all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
+
+        data_before_issuance = []
+        data_after_issuance = []
+        found_issuance = False
+        for tx in all_relevant_txs:
+            # only consider txs that have at least one confirmation
+            # note that tx will be None if confirmations is 0
+            if not tx['confirmations']:
+                continue
+
+            # tx hash needs to be identical with txid from proof and that is the
+            # actual issuance
+            if tx['txid'] == txid:
+                found_issuance = True
+
+            outs = tx['vout']
+            for o in outs:
+                # get op_return_hex, if any, and exit
+                if o['scriptPubKey']['hex'].startswith('6a'):
+                    data = get_op_return_data_from_script(o['scriptPubKey']['hex'])
+
+                    if not found_issuance:
+                        # to check certs revocations we can iterate this list in reverse!
+                        data_after_issuance.append(data)
+                    else:
+                        # current issuance is actually the first element of this list!
+                        # to check for addr revocations we can iterate this list as is
+                        data_before_issuance.append(data)
+
+        if not found_issuance:
+            raise ValueError("Txid for issuance not found in address' transactions")
+
+        results[key]['before'] = data_before_issuance
+        results[key]['after'] = data_after_issuance
+        results[key]['success'] = True
+
+        #print("ltcd end")
+
+    except Exception as e:
+        log.error("Ltcd Thread:" + sys.exc_info().__str__())
+
+        # add to queue to be visible to parent
+        queue.put(["Ltcd Thread:", sys.exc_info()])
+        #print("ltcd exception clause end")
 
 
 

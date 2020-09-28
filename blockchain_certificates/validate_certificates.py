@@ -21,22 +21,24 @@ from blockchain_certificates.chainpoint import ChainPointV2
 Gets issuer address from pdf metadata; requires backward compatibility using
 vpdf metadata version
 '''
-def get_issuer_address(pdf_file):
+def get_issuer_address_and_proof(pdf_file):
     pdf = PdfReader(pdf_file)
     try:
         version = pdf.Info.version
+        proof = json.loads( pdf.Info.chainpoint_proof.decode() )
         if(version == '1' or version == '2'):
             issuer = json.loads( pdf.Info.issuer.decode() )
-            return issuer['identity']['address']
+            return issuer['identity']['address'], proof
         else:           # older versions for backwards compatibility
             issuer_address = pdf.Info.issuer_address
             if issuer_address:
-                return issuer_address.decode()
+                return issuer_address.decode(), proof
             else:
                 metadata_object = json.loads( pdf.Info.metadata_object.decode() )
-                return metadata_object['issuer_address']
+                return metadata_object['issuer_address'], proof 
     except AttributeError:
-        raise ValueError("Could not find issuer address in pdf")
+        raise ValueError("Could not find issuer address or chainpoint proof in pdf")
+
 
 
 '''
@@ -107,18 +109,35 @@ def get_owner_and_remove_owner_proof(pdf_file):
 
 
 '''
+Get the blockchain network and whether it is testnet
+'''
+def get_network_from_chainpoint_proof(proof):
+    # current only a single anchor is alloed at a time; thus 0
+    chain_type = proof['anchors'][0]['type']
+    if(chain_type == 'BTCOpReturn'):
+        return 'bitcoin', False
+    elif(chain_type == 'LTCOpReturn'):
+        return 'litecoin', False
+    elif(chain_type == 'BTCTestnetOpReturn'):
+        return 'bitcoin', True
+    elif(chain_type == 'LTCTestnetOpReturn'):
+        return 'litecoin', True
+
+
+
+'''
 Validate the certificate
 '''
-def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
+def validate_certificate(cert, issuer_identifier, blockchain_services):
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
 
-    issuer_address = get_issuer_address(tmp_filename)
+    # _proof not really used but could compare with proof later on
+    issuer_address, _proof = get_issuer_address_and_proof(tmp_filename)
 
     proof = get_and_remove_chainpoint_proof(tmp_filename)
     if proof == None:
-        os.remove(tmp_filename)
         return False, "no chainpoint_proof in metadata"
 
     # get the hash after removing the metadata
@@ -129,16 +148,16 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     # instantiate chainpoint object
     cp = ChainPointV2()
 
-    txid = cp.get_txid_from_receipt(proof)
+    chain, testnet, txid = cp.get_chain_testnet_txid_from_receipt(proof)
 
     # make request to get txs regarding this address
     # issuance is the first element of data_before_issuance
     data_before_issuance, data_after_issuance = \
         network_utils.get_all_op_return_hexes(issuer_address, txid,
-                                              blockchain_services, testnet)
+                                              blockchain_services, chain, testnet)
 
     # validate receipt
-    valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier, testnet)
+    valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier)
 
     # display error except when the certificate expired; this is because we want
     # revoked certificate error to be displayed before cert expired error
@@ -146,7 +165,7 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
     if not valid and not reason.startswith("certificate expired"):
         return False, reason
 
-    # set bitcoin network (required for addr->pkh in revoke address)
+    # set appropriate network (required for addr->pkh in revoke address)
     if testnet:
         setup('testnet')
     else:
@@ -210,9 +229,6 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
         with open(tmp_filename, 'rb' ) as pdf:
             sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
 
-        # cleanup now that we got original filehash
-        os.remove(tmp_filename)
-
         # finally check if owner signature is valid
         #print(pk.get_address().to_string(), pk.to_hex(), sha256_hash, owner_proof)
         try:
@@ -220,6 +236,9 @@ def validate_certificate(cert, issuer_identifier, testnet, blockchain_services):
                 pass
         except Exception:   #BadSignatureError:
             return False, 'owner signature could not be validated'
+
+    # cleanup now that we know it validated
+    os.remove(tmp_filename)
 
     # in a valid credential the reason could contain an expiry date
     return True, reason
@@ -235,7 +254,7 @@ def load_config():
     default_config = os.path.join(base_dir, 'config.ini')
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
-    p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
+#AAA TODO DOCS!    p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-p', '--issuer_identifier', type=str, help='optional 8 bytes issuer code to be displayed in the blockchain')
@@ -257,10 +276,13 @@ def validate_certificates(conf, interactive=False):
                 if(filename.lower().endswith('.pdf')):
                     valid, reason = validate_certificate(cert,
                                                          conf.issuer_identifier,
-                                                         conf.testnet,
                                                          json.loads(conf.blockchain_services))
                     if valid:
-                        issuer_address = get_issuer_address(cert)
+                        # get issuer and chainpoint proof
+                        issuer_address, proof = get_issuer_address_and_proof(cert)
+                        # get blockchain and testnet from proof
+                        chain, testnet = get_network_from_chainpoint_proof(proof)
+                        # get verification information for issuer
                         verify_issuer = get_issuer_verification(cert)
 
                         # if valid then check issuer verification methods
@@ -268,7 +290,7 @@ def validate_certificates(conf, interactive=False):
                         if verify_issuer:
                             issuer_verification = \
                                 network_utils.check_issuer_verification_methods(issuer_address,
-                                                                                verify_issuer, conf.testnet)
+                                                                                verify_issuer, testnet)
                         if interactive:
                             print('Certificate {} is valid!'.format(cert))
                             if reason:

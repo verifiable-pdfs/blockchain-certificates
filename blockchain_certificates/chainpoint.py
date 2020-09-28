@@ -15,7 +15,9 @@ CHAINPOINT_HASH_TYPES = {'sha224': 'ChainpointSHA224v2',
                          'sha3_256': 'ChainpointSHA3-256v2',
                          'sha3_384': 'ChainpointSHA3-384v2',
                          'sha3_512': 'ChainpointSHA3-512v2' }
-CHAINPOINT_ANCHOR_TYPES = {'bitcoin': 'BTCOpReturn', 'litecoin': 'LTCOpReturn'} #, 'eth': 'ETHData'}
+CHAINPOINT_ANCHOR_TYPES = {'bitcoin': 'BTCOpReturn', 'litecoin': 'LTCOpReturn',
+                           'bitcoin_testnet': 'BTCTestnetOpReturn',
+                           'litecoin_testnet': 'LTCTestnetOpReturn'} #, 'eth': 'ETHData'}
 
 '''
 Implements chainpoint v2 proof of existence approach
@@ -68,7 +70,13 @@ class ChainPointV2(object):
     Returns the chainpoint v2 blockchain receipt for specific leaf
     Currently only works for bitcoin and litecoin anchors
     '''
-    def get_receipt(self, index, source_id, chain_type):
+    def get_receipt(self, index, source_id, chain, testnet):
+        chain_type = ''
+        if(testnet):
+            chain_type = chain + '_testnet'
+        else:
+            chain_type = chain
+
         if self.get_tree_ready_state():
             return {
                 "@context": CHAINPOINT_CONTEXT,
@@ -88,22 +96,24 @@ class ChainPointV2(object):
 
 
     '''
-    Validates a chainpoint receipt. Currently only for BTC anchors
+    Validates a chainpoint receipt. Currently for BTC and LTC anchors
         receipt is the chainpoint_proof metadata from the pdf file.
         certificate_hash is the hash of the certificate after we removed the
             chainpoint_proof metadata
         issuer_identifier is a fixed 8 bytes issuer code that displays on the
             blockchain
-        testnet specifies if testnet or mainnet was used
     '''
     # TODO consider using exceptions instead of (bool, text) tuples; this is
     # really only needed for valid but soon to expire
-    def validate_receipt(self, receipt, op_return_hex, certificate_hash, issuer_identifier='', testnet=False):
+    def validate_receipt(self, receipt, op_return_hex, certificate_hash, issuer_identifier=''):
         # check context and hash type
         if(receipt['@context'].lower() != CHAINPOINT_CONTEXT):
             return False, "wrong chainpoint context"
         if(receipt['type'] not in CHAINPOINT_HASH_TYPES.values()):
-            return False, "type not in CHAINPOINT_HASH_TYPES"
+            return False, "chainpoint type not in CHAINPOINT_HASH_TYPES"
+        # currently only one anchor at a time is allowed; thus 0
+        if(receipt['anchors'][0]['type'] not in CHAINPOINT_ANCHOR_TYPES.values()):
+            return False, "anchor type not in CHAINPOINT_ANCHOR_TYPES"
         target_hash = receipt['targetHash']
         merkle_root = receipt['merkleRoot']
         proof = receipt['proof']
@@ -115,11 +125,6 @@ class ChainPointV2(object):
         # validate merkle proof
         if(not self.validate_proof(proof, target_hash, merkle_root)):
            return False, "certificate's hash is not in merkle root"
-
-        txid = self.get_txid_from_receipt(receipt)
-
-        # validate anchor
-        #op_return_hex = network_utils.get_op_return_hex_from_blockchain(txid, testnet)
 
         # ignore issuer_identifier for now (it is string in CRED but used to be
         # hex so we need a smart way to get it) -- TODO: obsolete it !!!
@@ -166,16 +171,32 @@ class ChainPointV2(object):
 
 
 
-    def get_txid_from_receipt(self, receipt):
+    def get_chain_testnet_txid_from_receipt(self, receipt):
         # get anchor
-        # TODO currently gets only the first valid (BTC) anchor
+        # TODO currently gets only the first valid anchor
         anchors = receipt['anchors']
+        chain = ''
+        testnet = False
         txid = ''
         for a in anchors:
             if a['type'] in CHAINPOINT_ANCHOR_TYPES.values():
-                txid = a['sourceId']
-                break
-        return txid
+                if(a['type'] == 'BTCOpReturn'):
+                    chain = 'bitcoin'
+                    testnet = False
+                elif(a['type'] == 'LTCOpReturn'):
+                    chain = 'litecoin'
+                    testnet = False
+                elif(a['type'] == 'BTCTestnetOpReturn'):
+                    chain = 'bitcoin'
+                    testnet = True
+                elif(a['type'] == 'LTCTestnetOpReturn'):
+                    chain = 'litecoin'
+                    testnet = True
+
+            txid = a['sourceId']
+            break
+
+        return chain, testnet, txid
 
 
 
