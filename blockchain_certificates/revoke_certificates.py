@@ -11,9 +11,6 @@ import configargparse
 
 from pdfrw import PdfReader, PdfWriter, PdfDict
 
-from bitcoinutils.setup import setup
-from bitcoinutils.keys import P2pkhAddress
-
 from blockchain_certificates import pdf_utils
 from blockchain_certificates import publish_hash
 from blockchain_certificates import cred_protocol
@@ -107,6 +104,7 @@ def revoke_certificates(conf, interactive=False):
     if final_odd_hash_to_revoke:
         # issue a final revoke cmd with the last certificate hash
         op_return_bstring = cred_protocol.revoke_creds_cmd(txid, final_odd_hash_to_revoke)
+        print(conf)
         revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring,
                                                     interactive)
         if interactive:
@@ -137,13 +135,25 @@ Revoke an issuing address
 '''
 def revoke_address(conf, interactive=False):
 
+    if(conf.blockchain == 'litecoin'):
+        from litecoinutils.setup import setup
+        from litecoinutils.keys import P2pkhAddress, P2wpkhAddress
+        from litecoinutils.utils import is_address_bech32
+    else:
+        from bitcoinutils.setup import setup
+        from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress
+        from bitcoinutils.utils import is_address_bech32
+
     # initialize full node connection
     if(conf.testnet):
         setup('testnet')
     else:
         setup('mainnet')
 
-    address = P2pkhAddress(conf.issuing_address).to_hash160()
+    if(is_address_bech32(conf.issuing_address)):
+        address = P2wpkhAddress(conf.issuing_address).to_hash160()
+    else:
+        address = P2pkhAddress(conf.issuing_address).to_hash160()
     op_return_bstring = cred_protocol.revoke_address_cmd(address)
     revoked_txid = publish_hash.issue_op_return(conf, op_return_bstring)
     if interactive:
@@ -177,6 +187,9 @@ def load_config():
     p.add_argument('-n', '--full_node_url', type=str, default='127.0.0.1:18332', help='the url of the full node to use')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
+    p.add_argument('-l', '--blockchain', type=str, default='bitcoin',
+                   help='choose blockchain; currently bitcoin or litecoin')
+
     p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-f', '--tx_fee_per_byte', type=int, default=100, help='the fee per transaction byte in satoshis')
     args, _ = p.parse_known_args()

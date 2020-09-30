@@ -25,14 +25,14 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         from litecoinutils.transactions import Transaction, TxInput, TxOutput
         from litecoinutils.keys import P2pkhAddress, P2wpkhAddress
         from litecoinutils.script import Script
-        from litecoinutils.utils import to_satoshis
+        from litecoinutils.utils import to_satoshis, is_address_bech32
     else:
         from bitcoinutils.setup import setup
         from bitcoinutils.proxy import NodeProxy
         from bitcoinutils.transactions import Transaction, TxInput, TxOutput
         from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress
         from bitcoinutils.script import Script
-        from bitcoinutils.utils import to_satoshis
+        from bitcoinutils.utils import to_satoshis, is_address_bech32
 
 
     op_return_hex = binascii.hexlify(op_return_bstring).decode()
@@ -74,15 +74,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
                       host, port).get_proxy()
 
     # checks if address is native segwit or not.
-    is_address_bech32 = False
-    if (conf.blockchain == 'litecoin'):
-        if (conf.issuing_address.startswith('ltc') or
-                conf.issuing_address.startswith('tltc')):
-            is_address_bech32 = True
-    else:
-        if (conf.issuing_address.startswith('bc') or
-                conf.issuing_address.startswith('tb')):
-            is_address_bech32 = True
+    is_addr_bech32 = is_address_bech32(conf.issuing_address)
 
     # create transaction
     tx_outputs = []
@@ -110,7 +102,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         # currently bitcoin lib requires explicit instantiation; made method to
         # check this; update if/when the library fixes/automates this
         change_script_out = None
-        if is_address_bech32:
+        if is_addr_bech32:
             change_script_out = P2wpkhAddress(conf.issuing_address).to_script_pub_key()
         else:
             change_script_out = P2pkhAddress(conf.issuing_address).to_script_pub_key()
@@ -120,7 +112,7 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
         op_return_output = TxOutput(to_satoshis(0), Script(['OP_RETURN', op_return_cert_protocol]))
         tx_outputs = [ change_output, op_return_output ]
 
-        tx = Transaction(tx_inputs, tx_outputs, has_segwit=is_address_bech32)
+        tx = Transaction(tx_inputs, tx_outputs, has_segwit=is_addr_bech32)
 
         # sign transaction to get its size
         r = proxy.signrawtransactionwithwallet(tx.serialize())

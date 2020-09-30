@@ -9,9 +9,6 @@ import hashlib
 import configargparse
 from pdfrw import PdfReader, PdfWriter, PdfDict
 
-from bitcoinutils.setup import setup
-from bitcoinutils.keys import P2pkhAddress, PublicKey
-
 from blockchain_certificates import cred_protocol
 from blockchain_certificates import network_utils
 from blockchain_certificates import utils
@@ -35,7 +32,7 @@ def get_issuer_address_and_proof(pdf_file):
                 return issuer_address.decode(), proof
             else:
                 metadata_object = json.loads( pdf.Info.metadata_object.decode() )
-                return metadata_object['issuer_address'], proof 
+                return metadata_object['issuer_address'], proof
     except AttributeError:
         raise ValueError("Could not find issuer address or chainpoint proof in pdf")
 
@@ -127,8 +124,11 @@ def get_network_from_chainpoint_proof(proof):
 
 '''
 Validate the certificate
+Version 2.1.0 has BtcOpReturn, LtcOpReturn, BtcTestnetOpReturn and LtcTestnetOpReturn
+Versions <2.1.0 depend on testnet parameter to be set (it only supported
+BtcOpReturn)!
 '''
-def validate_certificate(cert, issuer_identifier, blockchain_services):
+def validate_certificate(cert, issuer_identifier, chain, config_testnet, blockchain_services):
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
@@ -148,13 +148,16 @@ def validate_certificate(cert, issuer_identifier, blockchain_services):
     # instantiate chainpoint object
     cp = ChainPointV2()
 
+    # testnet result is not used for backwards compatibility since older versions
+    # of chainpoint types did not have the Testnet versions that >v2.1.0 have
     chain, testnet, txid = cp.get_chain_testnet_txid_from_receipt(proof)
 
     # make request to get txs regarding this address
     # issuance is the first element of data_before_issuance
     data_before_issuance, data_after_issuance = \
         network_utils.get_all_op_return_hexes(issuer_address, txid,
-                                              blockchain_services, chain, testnet)
+                                              blockchain_services, chain,
+                                              config_testnet)
 
     # validate receipt
     valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier)
@@ -165,11 +168,22 @@ def validate_certificate(cert, issuer_identifier, blockchain_services):
     if not valid and not reason.startswith("certificate expired"):
         return False, reason
 
+    # load apropriate blockchain libraries
+    if(chain == 'litecoin'):
+        from litecoinutils.setup import setup
+        from litecoinutils.keys import P2pkhAddress, P2wpkhAddress, PublicKey
+        from litecoinutils.utils import is_address_bech32
+    else:
+        from bitcoinutils.setup import setup
+        from bitcoinutils.keys import P2pkhAddress, P2wpkhAddress, PublicKey
+        from litecoinutils.utils import is_address_bech32
+
     # set appropriate network (required for addr->pkh in revoke address)
     if testnet:
         setup('testnet')
     else:
         setup('mainnet')
+
 
     # check if cert's issuance is after a revoke address cmd on that address
     # and if yes then the issuance is invalid (address was revoked)
@@ -180,7 +194,10 @@ def validate_certificate(cert, issuer_identifier, blockchain_services):
         cred_dict = cred_protocol.parse_op_return_hex(data_before_issuance[i])
         if cred_dict:
             if cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
-                issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
+                if(is_address_bech32(issuer_address)):
+                    issuer_pkh = P2wpkhAddress(issuer_address).to_hash160()
+                else:
+                    issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
                 if issuer_pkh == cred_dict['data']['pkh']:
                     return False, "address was revoked"
 
@@ -207,7 +224,10 @@ def validate_certificate(cert, issuer_identifier, blockchain_services):
             elif cred_dict['cmd'] == cred_protocol.hex_op('op_revoke_address'):
                 # if address revocation is found stop looking since all other
                 # revocations will be invalid
-                issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
+                if(is_address_bech32(issuer_address)):
+                    issuer_pkh = P2wpkhAddress(issuer_address).to_hash160()
+                else:
+                    issuer_pkh = P2pkhAddress(issuer_address).to_hash160()
                 if issuer_pkh == cred_dict['data']['pkh']:
                     break
 
@@ -254,7 +274,9 @@ def load_config():
     default_config = os.path.join(base_dir, 'config.ini')
     p = configargparse.getArgumentParser(default_config_files=[default_config])
     p.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
-#AAA TODO DOCS!    p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
+    p.add_argument('-l', '--blockchain', type=str, default='bitcoin', 
+                   help='choose blockchain; currently bitcoin or litecoin')
+    p.add_argument('-t', '--testnet', action='store_true', help='specify if testnet or mainnet will be used')
     p.add_argument('-u', '--full_node_rpc_user', type=str, help='the rpc user as specified in the node\'s configuration')
     p.add_argument('-w', '--full_node_rpc_password', type=str, help='the rpc password as specified in the node\'s configuration')
     p.add_argument('-p', '--issuer_identifier', type=str, help='optional 8 bytes issuer code to be displayed in the blockchain')
@@ -276,6 +298,8 @@ def validate_certificates(conf, interactive=False):
                 if(filename.lower().endswith('.pdf')):
                     valid, reason = validate_certificate(cert,
                                                          conf.issuer_identifier,
+                                                         conf.blockchain,
+                                                         conf.testnet,
                                                          json.loads(conf.blockchain_services))
                     if valid:
                         # get issuer and chainpoint proof

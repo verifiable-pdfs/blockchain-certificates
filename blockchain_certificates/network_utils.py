@@ -5,8 +5,7 @@ import sys
 import queue
 import requests
 from threading import Thread
-import bitcoinrpc.authproxy as btcproxy
-import litecoinrpc.authproxy as ltcproxy
+import bitcoinrpc.authproxy as proxy
 
 import logging
 log = logging.getLogger( 'CRED Corelib' )
@@ -230,7 +229,7 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
     try:
         #print("btcd start")
         url = conf['full_url']
-        rpc_conn = btcproxy.AuthServiceProxy(url)
+        rpc_conn = proxy.AuthServiceProxy(url)
         all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
 
         data_before_issuance = []
@@ -289,7 +288,7 @@ def get_ltcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
     try:
         #print("ltcd start")
         url = conf['full_url']
-        rpc_conn = ltcproxy.AuthServiceProxy(url)
+        rpc_conn = proxy.AuthServiceProxy(url)
         all_relevant_txs = rpc_conn.searchrawtransactions(address, 1, 0, 10000000, 0, True)
 
         data_before_issuance = []
