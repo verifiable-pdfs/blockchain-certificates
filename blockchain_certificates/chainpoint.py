@@ -71,13 +71,10 @@ class ChainPointV2(object):
     Currently only works for bitcoin and litecoin anchors
     '''
     def get_receipt(self, index, source_id, chain, testnet):
-        chain_type = ''
-        if(testnet):
-            chain_type = chain + '_testnet'
-        else:
-            chain_type = chain
 
-        if self.get_tree_ready_state():
+        chain_type = utils.get_chain_type(chain, testnet)
+
+        if(chain_type is not None and self.get_tree_ready_state()):
             return {
                 "@context": CHAINPOINT_CONTEXT,
                 "type": self.get_chainpoint_hash_type(),
@@ -171,6 +168,7 @@ class ChainPointV2(object):
 
 
 
+    # TODO: DELETE - NOT USED ANYWHERE !!
     def get_chain_testnet_txid_from_receipt(self, receipt):
         # get anchor
         # TODO currently gets only the first valid anchor

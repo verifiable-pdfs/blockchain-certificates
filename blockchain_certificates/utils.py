@@ -49,3 +49,28 @@ def hex_to_int(hex):
     return int(hex, 16)
 
 
+'''
+Get chain type (string with blockchain plus whether it is testing or not. Blochchains
+supported are 'bitcoin' and 'litecoin'.
+'''
+def get_chain_type(chain, testnet):
+    if chain not in ['bitcoin', 'litecoin']:
+       return None
+
+    if(testnet):
+        return chain + '_testnet'
+    else:
+        return chain
+
+'''
+Get the chain and whether it is for testing given a chain type
+'''
+def get_chain_and_testnet(chain_type):
+    chain = chain_type.split('_')
+    if len(chain == 2):
+       return chain[0], True
+    else:
+       return chain[0], False
+
+
+

@@ -7,6 +7,8 @@ import requests
 from threading import Thread
 import bitcoinrpc.authproxy as proxy
 
+import blockchain_certificates.utils as utils
+
 import logging
 log = logging.getLogger( 'CRED Corelib' )
 
@@ -18,8 +20,12 @@ issuance (for checking revoked batches and/or certificates
 '''
 def get_all_op_return_hexes(address, txid, blockchain_services, chain, testnet=False):
 
-    services = blockchain_services['services']
-    required_successes = blockchain_services['required_successes']
+    chain_type = utils.get_chain_type(chain, testnet)
+    if chain_type is None:
+        raise ValueError("Unsupported blockchain {} - {}".format(chain, testnet))
+
+    services = blockchain_services[chain_type]['services']
+    required_successes = blockchain_services[chain_type]['required_successes']
 
     # instantiate a Queue to get thread exceptions
     my_queue = queue.Queue()

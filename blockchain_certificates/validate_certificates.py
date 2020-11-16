@@ -106,19 +106,31 @@ def get_owner_and_remove_owner_proof(pdf_file):
 
 
 '''
-Get the blockchain network and whether it is testnet
+Get the blockchain network and whether it is testnet plus the txid
+Before v2.1.0 only bitcoin was supported and thus BTCOpReturn. Thus for
+backward compatibility we also pass the address to help us determine if it is
+testnet or not.
 '''
-def get_network_from_chainpoint_proof(proof):
+def get_chain_testnet_txid_from_chainpoint_proof(proof, address):
+
     # current only a single anchor is alloed at a time; thus 0
     chain_type = proof['anchors'][0]['type']
+    txid = proof['anchors'][0]['sourceId']
+
     if(chain_type == 'BTCOpReturn'):
-        return 'bitcoin', False
+        # only for certs issued before v2.1.0 override testnet according to the
+        # address used (only bitcoin and BTCOpReturn was used back then)
+        if(address.startswith('m') or address.startswith('n') or
+           address.startswith('tb1')):
+           return 'bitcoin', True, txid
+
+        return 'bitcoin', False, txid
     elif(chain_type == 'LTCOpReturn'):
-        return 'litecoin', False
+        return 'litecoin', False, txid
     elif(chain_type == 'BTCTestnetOpReturn'):
-        return 'bitcoin', True
+        return 'bitcoin', True, txid
     elif(chain_type == 'LTCTestnetOpReturn'):
-        return 'litecoin', True
+        return 'litecoin', True, txid
 
 
 
@@ -128,13 +140,13 @@ Version 2.1.0 has BtcOpReturn, LtcOpReturn, BtcTestnetOpReturn and LtcTestnetOpR
 Versions <2.1.0 depend on testnet parameter to be set (it only supported
 BtcOpReturn)!
 '''
-def validate_certificate(cert, issuer_identifier, chain, config_testnet, blockchain_services):
+def validate_certificate(cert, issuer_identifier, blockchain_services):
     filename = os.path.basename(cert)
     tmp_filename =  '__' + filename
     shutil.copy(cert, tmp_filename)
 
-    # _proof not really used but could compare with proof later on
-    issuer_address, _proof = get_issuer_address_and_proof(tmp_filename)
+    # returned proof can be ignored here but could compare with proof later on
+    issuer_address, _ = get_issuer_address_and_proof(tmp_filename)
 
     proof = get_and_remove_chainpoint_proof(tmp_filename)
     if proof == None:
@@ -148,16 +160,15 @@ def validate_certificate(cert, issuer_identifier, chain, config_testnet, blockch
     # instantiate chainpoint object
     cp = ChainPointV2()
 
-    # testnet result is not used for backwards compatibility since older versions
-    # of chainpoint types did not have the Testnet versions that >v2.1.0 have
-    chain, testnet, txid = cp.get_chain_testnet_txid_from_receipt(proof)
+    chain, testnet, txid = get_chain_testnet_txid_from_chainpoint_proof(proof,
+                                                                        issuer_address)
 
     # make request to get txs regarding this address
     # issuance is the first element of data_before_issuance
     data_before_issuance, data_after_issuance = \
         network_utils.get_all_op_return_hexes(issuer_address, txid,
                                               blockchain_services, chain,
-                                              config_testnet)
+                                              testnet)
 
     # validate receipt
     valid, reason = cp.validate_receipt(proof, data_before_issuance[0], filehash, issuer_identifier)
@@ -298,14 +309,13 @@ def validate_certificates(conf, interactive=False):
                 if(filename.lower().endswith('.pdf')):
                     valid, reason = validate_certificate(cert,
                                                          conf.issuer_identifier,
-                                                         conf.blockchain,
-                                                         conf.testnet,
                                                          json.loads(conf.blockchain_services))
                     if valid:
                         # get issuer and chainpoint proof
                         issuer_address, proof = get_issuer_address_and_proof(cert)
                         # get blockchain and testnet from proof
-                        chain, testnet = get_network_from_chainpoint_proof(proof)
+                        chain, testnet, _ = get_chain_testnet_txid_from_chainpoint_proof(proof,
+                                                                                        issuer_address)
                         # get verification information for issuer
                         verify_issuer = get_issuer_verification(cert)
 
