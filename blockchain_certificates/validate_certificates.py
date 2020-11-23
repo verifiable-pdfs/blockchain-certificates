@@ -267,9 +267,12 @@ def validate_certificate(cert, issuer_identifier, blockchain_services):
                 pass
         except Exception:   #BadSignatureError:
             return False, 'owner signature could not be validated'
-
-    # cleanup now that we know it validated
-    os.remove(tmp_filename)
+        finally:
+            # cleanup
+            os.remove(tmp_filename)
+    else:
+        # cleanup now that we know it validated
+        os.remove(tmp_filename)
 
     # in a valid credential the reason could contain an expiry date
     return True, reason
