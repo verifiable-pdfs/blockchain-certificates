@@ -284,6 +284,67 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
 
 
 
+'''
+Uses a custom API to get all transactions of the address in the same format
+that btcd/ltcd returns.
+'''
+def get_custom_api_op_return_hexes(queue, address, txid, results, key, conf, testnet=False):
+
+    try:
+        #print("btcd start")
+        url = conf['full_url']
+
+        address_txs_url = '{}/{}'.format(url, address)
+        all_relevant_txs = requests.get(address_txs_url).json()
+
+        if 'error' in all_relevant_txs:
+            raise ValueError(all_relevant_txs['error'])
+
+        data_before_issuance = []
+        data_after_issuance = []
+        found_issuance = False
+        for tx in all_relevant_txs:
+            # only consider txs that have at least one confirmation
+            # note that tx will be None if confirmations is 0
+            if not tx['confirmations']:
+                continue
+
+            # tx hash needs to be identical with txid from proof and that is the
+            # actual issuance
+            if tx['txid'] == txid:
+                found_issuance = True
+
+            outs = tx['vout']
+            for o in outs:
+                # get op_return_hex, if any, and exit
+                if o['scriptPubKey']['hex'].startswith('6a'):
+                    data = get_op_return_data_from_script(o['scriptPubKey']['hex'])
+
+                    if not found_issuance:
+                        # to check certs revocations we can iterate this list in reverse!
+                        data_after_issuance.append(data)
+                    else:
+                        # current issuance is actually the first element of this list!
+                        # to check for addr revocations we can iterate this list as is
+                        data_before_issuance.append(data)
+
+        if not found_issuance:
+            raise ValueError("Txid for issuance not found in address' transactions")
+
+        results[key]['before'] = data_before_issuance
+        results[key]['after'] = data_after_issuance
+        results[key]['success'] = True
+
+        #print("btcd end")
+
+    except Exception as e:
+        log.error("custom_api thread:" + sys.exc_info().__str__())
+
+        # add to queue to be visible to parent
+        queue.put(["custom_api thread:", sys.exc_info()])
+        #print("btcd exception clause end")
+
+
 
 '''
 Uses a ltcd node that contains address indexes (txindex=1, addrindex=1) to get
