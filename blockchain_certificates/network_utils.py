@@ -244,7 +244,7 @@ def get_btcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
         for tx in all_relevant_txs:
             # only consider txs that have at least one confirmation
             # note that tx will be None if confirmations is 0
-            if not tx['confirmations']:
+            if not tx.get('confirmations', 0):
                 continue
 
             # tx hash needs to be identical with txid from proof and that is the
@@ -306,7 +306,7 @@ def get_custom_api_op_return_hexes(queue, address, txid, results, key, conf, tes
         for tx in all_relevant_txs:
             # only consider txs that have at least one confirmation
             # note that tx will be None if confirmations is 0
-            if not tx['confirmations']:
+            if not tx.get('confirmations', 0):
                 continue
 
             # tx hash needs to be identical with txid from proof and that is the
@@ -364,7 +364,7 @@ def get_ltcd_op_return_hexes(queue, address, txid, results, key, conf, testnet=F
         for tx in all_relevant_txs:
             # only consider txs that have at least one confirmation
             # note that tx will be None if confirmations is 0
-            if not tx['confirmations']:
+            if not tx.get('confirmations', 0):
                 continue
 
             # tx hash needs to be identical with txid from proof and that is the
