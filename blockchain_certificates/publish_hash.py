@@ -132,10 +132,14 @@ def issue_op_return(conf, op_return_bstring, interactive=False):
 
         # the default Bitcoin (and litecoin) Core node doesn't allow the creation of dust 
         # UTXOs https://bitcoin.stackexchange.com/questions/10986/what-is-meant-by-bitcoin-dust
-        # if change is less than 546 satoshis that is considered dust (with the
-        # default node parameters) then include another UTXO
-        if change_amount >= 550:
-            break
+        # if change is less than 546 (2940 for litecoin) satoshis that is considered dust 
+        # (with the default node parameters) then include another UTXO
+        if conf.blockchain == 'litecoin':
+            if change_amount >= 3000:
+                break
+        else:
+            if change_amount >= 550:
+                break
 
     if(change_amount < 0):
         if interactive:
