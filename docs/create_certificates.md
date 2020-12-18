@@ -39,7 +39,7 @@ In addition to setting up the configuration file (consult the following section)
 __Pdf certificate template__
 :	This is the PDF certificate template that will be used to create all the certificates. It will consist of the certificate exactly as you want it displayed with placeholders to be filled in for each graduates (e.g. graduate's name and grade, etc.). The placeholders are just Acroform fields. Any version of Acrobat Pro is required to create the (Acroform) fields. The fields need to have the same name as the column headers in the CSV file that are expected to match.
 
-Typically we only have an issuer being the owner of all the certificates. Optionally, however, an issuer can issue certificates on behalf of others and in this case we can provide additional information per row to specify the identity of the owner. Specifically we need to pass __OWNER_NAME__, __OWNER_PK__ and __OWNER_ADDRESS__. The owners' verification is the responsibiity of the issuer.
+Typically we only have an issuer being the owner of all the certificates. Optionally, however, an issuer can issue certificates on behalf of others and in this case we can provide additional information per row to specify the identity of the owner. Specifically we need to pass /_/_OWNER_NAME/_/_, /_/_OWNER_PK/_/_ and /_/_OWNER_ADDRESS/_/_. The owners' verification is the responsibiity of the issuer.
 
 
 __CSV file__

@@ -35,7 +35,7 @@ In addition to setting up the configuration file (consult the following section)
 __CSV graduates file__
 :	This is a CSV file that contains all the data that we wish to include as metadata for each certificate. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the `cert_metadata_columns` that are selected to go to the `metadata_object`.
 
-Typically we only have an issuer being the owner of all the certificates. Optionally, however, an issuer can issue certificates on behalf of others and in this case we can provide additional information per row to specify the identity of the owner. Specifically we need to pass __OWNER_NAME__, __OWNER_PK__ and __OWNER_ADDRESS__. The owners' verification is the responsibiity of the issuer.
+Typically we only have an issuer being the owner of all the certificates. Optionally, however, an issuer can issue certificates on behalf of others and in this case we can provide additional information per row to specify the identity of the owner. Specifically we need to pass \_\_OWNER_NAME\_\_, \_\_OWNER_PK\_\_ and \_\_OWNER_ADDRESS\_\_. The owners' verification is the responsibiity of the issuer.
 
 __Existing certificates__
 :	Place all existing certificates in the directory specified by `certificates_directory`
