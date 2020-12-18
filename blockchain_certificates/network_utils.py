@@ -458,6 +458,33 @@ def check_domain_verification_method(address, results, key, conf, testnet):
 
 
 '''
+Verify that issuing address exists in the issuer's github account using a gist.
+Note that the end-user should confirm that the github account is indeed the issuer's.
+'''
+def check_github_verification_method(address, results, key, conf, testnet):
+    try:
+
+        user = conf['user']
+        gist_id = conf['gist_id']
+        url = "https://gist.githubusercontent.com/" + user + "/" + gist_id + "/raw"
+        cred_txt_file = requests.get(url)
+
+        # set gist url in results
+        results[key]['url'] = url
+
+        if cred_txt_file.status_code == 200:
+            if address in cred_txt_file.text:
+                results[key]['success'] = True
+
+    except Exception as e:
+        # TODO log error -- print(e)
+
+        # don't break -- ignore result of this thread
+        pass
+
+
+
+'''
 Verify that issuing address is managed by block.co.
 This means that the issuer name has been verified by block.co
 '''

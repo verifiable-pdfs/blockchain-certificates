@@ -35,6 +35,8 @@ In addition to setting up the configuration file (consult the following section)
 __CSV graduates file__
 :	This is a CSV file that contains all the data that we wish to include as metadata for each certificate. It could contain extra columns that will be ignored. The header of the file should contain the names of the columns and those names are used to match the `cert_metadata_columns` that are selected to go to the `metadata_object`.
 
+Typically we only have an issuer being the owner of all the certificates. Optionally, however, an issuer can issue certificates on behalf of others and in this case we can provide additional information per row to specify the identity of the owner. Specifically we need to pass __OWNER_NAME__, __OWNER_PK__ and __OWNER_ADDRESS__. The owners' verification is the responsibiity of the issuer.
+
 __Existing certificates__
 :	Place all existing certificates in the directory specified by `certificates_directory`
 
@@ -110,7 +112,7 @@ $ revoke-certificates -c path/to/working_directory/config.ini -s
 |**Validation related**||
 |f|Specify the PDF certificates to be validated.|
 |blockchain_services|For each supported blockchain one can specify the validation services to use and how many successes required. Example (and default): `{ "bitcoin": { "services": [ {"blockcypher":{} } ], "required_successes": 1} }`. Currently, blockchains supported are 'bitcoin', 'litecoin', 'bitcoin_testnet' and 'litecoin_testnet'. Bitcoin suports 'blockcypher', 'btcd' and 'custom_api': `... {"btcd": { "full_url": "http://user:password@127.0.0.1:18334" }}. Litecoin currently supports 'ltcd' and 'custom_api'.`|
-|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "domain": { "url": "http://kkarasavvas.com" } }|
+|verify_issuer|Specify the methods that an issuer identity (Bitcoin address) can be validated. Example (and default): `{ "methods": [] }`. Possible values are ... { "domain": { "url": "http://kkarasavvas.com" } } and { "github": { "user": "karask", "gist_id": "db951671b1af6b1edd56df06f1b9109a" } } |
 |**Revocation related**|Mutually exclusive options|
 |p|Specify the PDF certificates that we need to revoke.|
 |batch|Specify the transaction id of the issuance which we want to revoke/invalidate.|

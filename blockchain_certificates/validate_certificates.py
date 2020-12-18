@@ -334,7 +334,7 @@ def validate_certificates(conf, interactive=False):
                                 print("(" + reason + ")")
                             if issuer_verification:
                                 for k, v in issuer_verification.items():
-                                    if k == "domain":
+                                    if k == "domain" or k == "github":
                                         print("Issuer verification method:", k,
                                               "(", v['url'], ")", "->", v['success'])
                                     else:
