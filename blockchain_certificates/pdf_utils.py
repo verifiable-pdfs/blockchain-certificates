@@ -279,7 +279,12 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
         # signmessage does not support signing with bech32 key.
         # To resolve we use the public key to get the base58check encoding that
         # signmessage is happy with so that we can sign!
-        if (owner_address.startswith('bc') or owner_address.startswith('tb')):
+        if (
+            owner_address.startswith('bc') or
+            owner_address.startswith('tb') or
+            owner_address.startswith('ltc') or
+            owner_address.startswith('tltc')
+        ):
             owner_address = PublicKey(owner_pk).get_address().to_string()
 
         # NOTE that address (the encoding) might have changed here from bech32

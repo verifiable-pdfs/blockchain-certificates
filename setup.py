@@ -19,7 +19,7 @@ setup(name='blockchain-certificates',
           "configargparse==0.11.0",
           "merkletools==1.0.3",
           "bitcoin-utils==0.4.10",
-          "litecoin-utils==0.4.11",
+          "litecoin-utils==0.4.12",
       ],
       package_data={
           'blockchain_certificates': ['requirements.txt',
