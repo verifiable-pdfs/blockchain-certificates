@@ -8,9 +8,6 @@ import json
 import glob
 import hashlib
 from pdfrw import PdfReader, PdfWriter, PdfDict
-from bitcoinutils.setup import setup
-from bitcoinutils.proxy import NodeProxy
-from bitcoinutils.keys import PublicKey
 
 
 '''
@@ -266,6 +263,15 @@ def _fill_pdf_metadata(out_file, issuer, issuer_address, column_fields, data,
         sha256_hash = None
         with open(out_file, 'rb' ) as pdf:
             sha256_hash = hashlib.sha256(pdf.read()).hexdigest()
+
+        if(conf.blockchain == 'litecoin'):
+            from litecoinutils.setup import setup
+            from litecoinutils.proxy import NodeProxy
+            from litecoinutils.keys import PublicKey
+        else:
+            from bitcoinutils.setup import setup
+            from bitcoinutils.proxy import NodeProxy
+            from bitcoinutils.keys import PublicKey
         if(conf.testnet):
             setup('testnet')
         else:
