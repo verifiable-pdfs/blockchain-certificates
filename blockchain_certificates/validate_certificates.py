@@ -313,12 +313,13 @@ def validate_certificates(conf, interactive=False):
                     valid, reason = validate_certificate(cert,
                                                          conf.issuer_identifier,
                                                          json.loads(conf.blockchain_services))
+                    # get issuer and chainpoint proof
+                    issuer_address, proof = get_issuer_address_and_proof(cert)
+                    # get blockchain and testnet from proof
+                    chain, testnet, _ = get_chain_testnet_txid_from_chainpoint_proof(proof,
+                                                                                    issuer_address)
                     if valid:
-                        # get issuer and chainpoint proof
-                        issuer_address, proof = get_issuer_address_and_proof(cert)
-                        # get blockchain and testnet from proof
-                        chain, testnet, _ = get_chain_testnet_txid_from_chainpoint_proof(proof,
-                                                                                        issuer_address)
+                       
                         # get verification information for issuer
                         verify_issuer = get_issuer_verification(cert)
 
@@ -341,8 +342,8 @@ def validate_certificates(conf, interactive=False):
                                         print("Issuer verification method:", k, "->", v['success'])
                         else:
                             results_array.append({ "cert": cert, "status":
-                                                  "valid", "reason": reason,
-                                                  "verification": issuer_verification })
+                                                  "valid", "reason": reason, "chain": chain,
+                                                  "testnet": testnet, "verification": issuer_verification })
                     else:
                         if interactive:
                             print('Certificate {} is _not_ valid!'.format(cert))
@@ -350,18 +351,21 @@ def validate_certificates(conf, interactive=False):
                                 print("(" + reason + ")")
                         else:
                             results_array.append({ "cert": cert, "status":
-                                                  "invalid", "reason": reason })
+                                                  "invalid", "chain": chain,
+                                                  "testnet": testnet, "reason": reason })
                 else:
                     if interactive:
                         print('Skipping non-pdf file: {}'.format(cert))
                     else:
                         results_array.append({ "cert": cert, "status": "N/A",
+                                              "chain": chain, "testnet": testnet,
                                               "reason": "not a pdf file" })
             else:
                 if interactive:
                     print('Skipping non-existent file {}'.format(cert))
                 else:
                     results_array.append({ "cert": cert, "status": "N/A",
+                                          "chain": chain, "testnet": testnet, 
                                           "reason": "file not found" })
 
 
