@@ -5,7 +5,7 @@ Technical
 - PDF plugin for validating from viewer
 - ADD SEGWIT addresses/tx for malleability fix (and cheaper txs)
 
-
 Other
 - could we register cred.txt as a .well-known URI through IANA? (requires wide adoption first!)
+
 
